@@ -51,6 +51,6 @@ object ShapeDAO {
             vertices.addAll(it)
         }
 
-        return Model(vertices, shapes, ShapeType.LINE.ordinal)
+        return Model(vertices, shapes, ShapeType.LINE)
     }
 }
