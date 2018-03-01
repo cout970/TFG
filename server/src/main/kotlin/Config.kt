@@ -1,7 +1,7 @@
 
 
 object Config {
-    val DDBB_HOST = "192.168.8.108"
+    val DDBB_HOST = "192.168.8.107"
     val DDBB_POST = 5432
     val DDBB_NAME = "postgres"
 

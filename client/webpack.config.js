@@ -34,5 +34,16 @@ module.exports = {
     resolve: {
         extensions: ['.tsx', '.ts', '.jsx', '.js', '*']
     },
-    devtool: "source-map"
+    devtool: "source-map",
+
+    devServer:{
+        compress: true,
+        port: 3000,
+        proxy: {
+            '/api': {
+                target: 'http://localhost:8080',
+                secure: false
+            }
+        }
+    }
 }

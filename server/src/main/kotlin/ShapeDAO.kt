@@ -5,7 +5,7 @@ object ShapeDAO {
 
     fun getMultiLine(mun: String): Model {
 
-        require("""\d\d\d""".toRegex().matches(mun)){"Invalid municipio code: $mun"}
+        require("""\d\d\d""".toRegex().matches(mun)) { "Invalid municipio code: $mun" }
         val lines = mutableListOf<List<Float>>()
 
         DDBBManager.useConnection {
@@ -15,18 +15,10 @@ object ShapeDAO {
                 val multiLine = geom.geometry as MultiLineString
 
                 val scale = 1 / 100f
-                val hScale = 1 / 100f
+                val hScale = 1 / 50f
 
-                var minX = 513905.06f
-                var minY = 4727060.5f
-//                multiLine.lines.forEach {
-//                    it.points.forEach {
-//                        minX = minOf(minX, it.getX().toFloat())
-//                        minY = minOf(minY, it.getY().toFloat())
-//                    }
-//                }
-
-//                println("$minX, $minY")
+                val minX = 513905.06f
+                val minY = 4727060.5f
 
                 val line = mutableListOf<Float>()
 

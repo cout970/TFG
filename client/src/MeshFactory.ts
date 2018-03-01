@@ -6,8 +6,8 @@ import clamp = Math.clamp;
 
 export class MeshFactory {
 
-    modelToObjects(model: Model): Array<Object3D> {
-        if (model.type == ShapeType.LINE) {
+    static modelToObjects(model: Model): Array<Object3D> {
+        if (model.type == "LINE") {
 
             return model.shapes.map(shape => {
                 if (shape.indices.length == 0) return
