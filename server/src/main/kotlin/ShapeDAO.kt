@@ -1,5 +1,7 @@
 import org.postgis.MultiLineString
+import org.postgis.MultiPolygon
 import org.postgis.PGgeometry
+import org.postgis.Point
 
 object ShapeDAO {
 
@@ -24,9 +26,8 @@ object ShapeDAO {
 
                 multiLine.lines.forEach {
                     it.points.forEach {
-                        line.add(scale * -(it.getX().toFloat() - minX))
-                        line.add(hScale * (cota.toFloat()))
-                        line.add(scale * (it.getY().toFloat() - minY))
+                        it.z = cota
+                        addPoint(it, line)
                     }
                 }
 
@@ -44,5 +45,46 @@ object ShapeDAO {
         }
 
         return Model(vertices, shapes, ShapeType.LINE)
+    }
+
+    fun getBuildings(): Model {
+
+        val vertices = mutableListOf<Float>()
+        val shapes = mutableListOf<Shape>()
+
+        DDBBManager.useConnection {
+            query("SELECT geom FROM \"delimitacion construcciones\" WHERE municipio = '078' LIMIT 1000;").forEach {
+                val geom = it.getObject("geom") as PGgeometry
+
+                (geom.geometry as MultiPolygon).polygons.map { polygon ->
+
+                    for (i in 0 until polygon.numRings()) {
+                        val ring = polygon.getRing(i)
+
+                        ring.points.forEach {
+                            addPoint(it, vertices)
+                        }
+
+                        for (j in 1 until ring.numPoints() - 1) {
+                            shapes.add(Shape(listOf(0, j, j + 1)))
+                        }
+                    }
+                }
+            }
+        }
+
+        return Model(vertices, shapes, ShapeType.MESH)
+    }
+
+    private fun addPoint(p: Point, vertexList: MutableList<Float>) {
+        val minX = 513905.06f
+        val minY = 4727060.5f
+
+        val scale = 1 / 100f
+        val hScale = 1 / 50f
+
+        vertexList.add(scale * -(p.x.toFloat() - minX))
+        vertexList.add(hScale * (p.z.toFloat()))
+        vertexList.add(scale * (p.y.toFloat() - minY))
     }
 }

@@ -16,11 +16,11 @@ object DDBBManager {
 
         Driver.isRegistered()
         DriverWrapper.isRegistered()
-        DriverManager.getConnection(Config.JDBC_URL, "postgres", System.getenv("postgres_passwd")).close()
+        DriverManager.getConnection(Config.JDBC_URL, "postgres", "root").close()
     }
 
     inline fun useConnection(func: Connection.() -> Unit) {
-        val connection = DriverManager.getConnection(Config.JDBC_URL, "postgres", System.getenv("postgres_passwd"))
+        val connection = DriverManager.getConnection(Config.JDBC_URL, "postgres", "root")
 
         if (connection !is PGConnection)
             throw IllegalStateException("Invalid connection type: ${connection::class.java}, for $connection")

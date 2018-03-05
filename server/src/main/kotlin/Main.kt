@@ -34,7 +34,6 @@ fun main(args: Array<String>) {
 //    reactor()
 }
 
-
 fun httpServer() {
 
     val gson = GsonBuilder()
@@ -63,6 +62,11 @@ fun httpServer() {
         /// multiline test
         get("/api/multiline/:mun") {
             gson.toJson(ShapeDAO.getMultiLine(request.params("mun")))
+        }
+
+        /// buildings test
+        get("/api/buildings") {
+            gson.toJson(ShapeDAO.getBuildings())
         }
 
         // autoreload

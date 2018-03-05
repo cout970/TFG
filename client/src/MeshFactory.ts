@@ -32,11 +32,11 @@ export class MeshFactory {
         } else {
             let geometry = new Geometry()
             let material = new MeshPhongMaterial()
-            material.wireframe = true
+            // material.wireframe = true
 
             const end = model.vertex.length / 3
 
-            for (let ind; ind < end; ind++) {
+            for (let ind = 0; ind < end; ind++) {
                 let i = model.vertex[ind * 3]
                 let h = model.vertex[ind * 3 + 1]
                 let j = model.vertex[ind * 3 + 2]
@@ -47,6 +47,8 @@ export class MeshFactory {
                 let ind = it.indices
                 geometry.faces.push(new Face3(ind[0], ind[1], ind[2]))
             })
+
+            console.log(geometry)
 
             return [new Mesh(geometry, material)]
         }
