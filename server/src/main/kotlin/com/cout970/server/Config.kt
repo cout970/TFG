@@ -1,7 +1,7 @@
-
+package com.cout970.server
 
 object Config {
-    val DDBB_HOST = "localhost" //""192.168.8.107"
+    val DDBB_HOST = System.getProperty("DDBB_HOST") ?: "localhost"
     val DDBB_POST = 5432
     val DDBB_NAME = "postgres"
 

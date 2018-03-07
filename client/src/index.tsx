@@ -16,4 +16,3 @@ function main() {
     Environment.init()
     Environment.gameLoop()
 }
-

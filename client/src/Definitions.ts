@@ -4,16 +4,12 @@ interface Vector3f {
     z: number
 }
 
-interface Multiline {
-    lines: Array<Array<Vector3f>>
-}
-
 interface Shape {
     indices: Array<number>
 }
 
 interface Model {
-    vertex: Array<number>
+    vertex: Array<Vector3f>
     shapes: Array<Shape>
     type: string
 }

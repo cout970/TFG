@@ -1,7 +1,11 @@
 import {
-    BufferGeometry, Face3, Geometry, Line, LineBasicMaterial, Math, Mesh, MeshPhongMaterial, Object3D,
-    Vector3
+    BufferGeometry, Color, Face3, FaceColors, Geometry, Line, LineBasicMaterial, Math, Mesh, MeshPhongMaterial,
+    MeshStandardMaterial,
+    Object3D, Shape,
+    ShapeUtils,
+    Vector3, VertexColors
 } from "three";
+
 import clamp = Math.clamp;
 
 export class MeshFactory {
@@ -13,19 +17,20 @@ export class MeshFactory {
                 if (shape.indices.length == 0) return
 
                 let points = []
+
                 shape.indices.forEach(it => {
-                    let x = model.vertex[it * 3]
-                    let y = model.vertex[it * 3 + 1]
-                    let z = model.vertex[it * 3 + 2]
-                    points.push(new Vector3(x, y, z))
+                    let vec = model.vertex[it]
+                    points.push(new Vector3(vec.x, vec.y, vec.z))
                 })
 
-                let height = model.vertex[shape.indices[0] * 3 + 1]
-
-                let range = (clamp(height, 0.25, 8.0) - 0.25) / 7.75
-
                 let material = new LineBasicMaterial()
-                material.color.setRGB(range, range, range)
+
+                let height = model.vertex[shape.indices[0]].y
+                let range = clamp(height, 0, 800) / 800
+
+                let low = new Color(0, 1, 0)
+                let high = new Color(1, 0, 0)
+                material.color.set(low.lerp(high, range))
 
                 return new Line(new BufferGeometry().setFromPoints(points), material)
             })
@@ -33,24 +38,33 @@ export class MeshFactory {
             let geometry = new Geometry()
             let material = new MeshPhongMaterial()
             // material.wireframe = true
+            material.vertexColors = VertexColors
 
-            const end = model.vertex.length / 3
-
-            for (let ind = 0; ind < end; ind++) {
-                let i = model.vertex[ind * 3]
-                let h = model.vertex[ind * 3 + 1]
-                let j = model.vertex[ind * 3 + 2]
-                geometry.vertices.push(new Vector3(i, h, j))
-            }
-
-            model.shapes.forEach(it => {
-                let ind = it.indices
-                geometry.faces.push(new Face3(ind[0], ind[1], ind[2]))
+            model.vertex.forEach(vec => {
+                geometry.vertices.push(new Vector3(vec.x, vec.y, vec.z))
             })
 
-            console.log(geometry)
+            let low = new Color(0, 1, 0)
+            let high = new Color(1, 0, 0)
 
-            return [new Mesh(geometry, material)]
+            model.shapes.forEach(shape => {
+                let ind = shape.indices
+                let face = new Face3(ind[0], ind[1], ind[2])
+
+                let h1 = model.vertex[ind[0]].y
+                let h2 = model.vertex[ind[1]].y
+                let h3 = model.vertex[ind[2]].y
+
+                face.vertexColors[0] = low.clone().lerp(high, h1 / 15)
+                face.vertexColors[1] = low.clone().lerp(high, h2 / 15)
+                face.vertexColors[2] = low.clone().lerp(high, h3 / 15)
+                geometry.faces.push(face)
+            })
+
+            geometry.computeFaceNormals();
+            geometry.computeVertexNormals();
+
+            return [new Mesh(new BufferGeometry().fromGeometry(geometry), material)]
         }
     }
 }

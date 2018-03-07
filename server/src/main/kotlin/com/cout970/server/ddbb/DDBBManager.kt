@@ -1,4 +1,6 @@
+package com.cout970.server.ddbb
 
+import com.cout970.server.Config
 import org.postgis.DriverWrapper
 import org.postgresql.Driver
 import org.postgresql.PGConnection
@@ -39,12 +41,13 @@ object DDBBManager {
 
 }
 
-//language=PostgreSQL
 fun Connection.query(sql: String): Sequence<ResultSet> = buildSequence {
+    println("Query started: '$sql'")
     val statement = createStatement()
     val resultSet = statement.executeQuery(sql)
     while (resultSet.next()) {
         yield(resultSet)
     }
     statement.close()
+    println("Query finished: '$sql'")
 }

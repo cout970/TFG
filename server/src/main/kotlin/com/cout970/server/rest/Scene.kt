@@ -1,8 +1,10 @@
+package com.cout970.server.rest
+
 object Defs {
     data class Scene(
             val camera: Camera,
             val layers: List<Layer>,
-    val materials: List<Material>
+            val materials: List<Material>
     )
 
     sealed class Camera {

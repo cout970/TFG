@@ -1,4 +1,11 @@
+package com.cout970.server.util
+
+import com.cout970.server.rest.HeightMap
+import com.cout970.server.rest.Model
+import com.cout970.server.rest.Shape
+import com.cout970.server.rest.ShapeType
 import org.joml.SimplexNoise
+import org.joml.Vector3f
 
 /**
  *
@@ -19,7 +26,7 @@ private fun generateHeightMapAux(x: Int, y: Int): HeightMap {
 
 fun generateDebugHeightMap(x: Int, y: Int): Model {
     val map = generateHeightMapAux(x, y)
-    val vertices = mutableListOf<Float>()
+    val vertices = mutableListOf<Vector3f>()
     val shapes = mutableListOf<Shape>()
 
     val offsetX = x * (map.width - 1)
@@ -27,9 +34,11 @@ fun generateDebugHeightMap(x: Int, y: Int): Model {
 
     for (i in 0 until map.width) {
         for (j in 0 until map.height) {
-            vertices.add(i.toFloat() + offsetX)
-            vertices.add(map[i, j])
-            vertices.add(j.toFloat() + offsetY)
+            vertices.add(Vector3f(
+                    i.toFloat() + offsetX,
+                    map[i, j],
+                    j.toFloat() + offsetY
+            ))
         }
     }
 

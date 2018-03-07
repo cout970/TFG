@@ -1,7 +1,5 @@
+package com.cout970.server.rest
 
-/**
- *
- */
 
 class HeightMap(val map: MutableList<Float>, val width: Int, val height: Int) {
 

@@ -1,4 +1,4 @@
-
+package com.cout970.server.util
 
 
 inline fun (() -> Unit).ifFail(func: () -> Unit){
