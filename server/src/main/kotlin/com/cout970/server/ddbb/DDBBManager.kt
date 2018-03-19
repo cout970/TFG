@@ -4,7 +4,6 @@ import com.cout970.server.Config
 import org.postgis.DriverWrapper
 import org.postgresql.Driver
 import org.postgresql.PGConnection
-import org.postgresql.util.PGobject
 import java.sql.Connection
 import java.sql.DriverManager
 import java.sql.ResultSet
@@ -18,11 +17,11 @@ object DDBBManager {
 
         Driver.isRegistered()
         DriverWrapper.isRegistered()
-        DriverManager.getConnection(Config.JDBC_URL, "postgres", "root").close()
+        DriverManager.getConnection(Config.JDBC_URL, Config.DDBB_USER, Config.DDBB_PASSWORD()).close()
     }
 
     inline fun useConnection(func: Connection.() -> Unit) {
-        val connection = DriverManager.getConnection(Config.JDBC_URL, "postgres", "root")
+        val connection = DriverManager.getConnection(Config.JDBC_URL, Config.DDBB_USER, Config.DDBB_PASSWORD())
 
         if (connection !is PGConnection)
             throw IllegalStateException("Invalid connection type: ${connection::class.java}, for $connection")
@@ -32,8 +31,8 @@ object DDBBManager {
         * must cast the connection to the pgsql-specific connection
         * implementation before calling the addDataType() method.
         */
-        connection.addDataType("geometry", Class.forName("org.postgis.PGgeometry") as Class<PGobject>)
-        connection.addDataType("box3d", Class.forName("org.postgis.PGboxbase") as Class<PGobject>)
+//        connection.addDataType("geometry", Class.forName("org.postgis.PGgeometry") as Class<PGobject>)
+//        connection.addDataType("box3d", Class.forName("org.postgis.PGboxbase") as Class<PGobject>)
 
         connection.func()
         connection.close()

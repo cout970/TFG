@@ -1,4 +1,8 @@
-import {AmbientLight, Color, Group, OrbitControls, PerspectiveCamera, Scene, Vector3, WebGLRenderer} from "three";
+import {
+    AmbientLight, Color, CullFaceNone, FrontFaceDirectionCCW, FrontFaceDirectionCW, Group, OrbitControls,
+    PerspectiveCamera, Scene, Vector3,
+    WebGLRenderer
+} from "three";
 import * as THREE from "three";
 
 const StatsCtr = require("stats.js")

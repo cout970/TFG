@@ -9,7 +9,10 @@ import eu.printingin3d.javascad.coords.Coords3d
 import eu.printingin3d.javascad.coords2d.Coords2d
 import eu.printingin3d.javascad.models.LinearExtrude
 import org.joml.Vector3f
-import org.postgis.*
+import org.postgis.MultiPolygon
+import org.postgis.PGgeometry
+import org.postgis.Point
+import org.postgis.Polygon
 
 
 object ShapeDAO {
@@ -21,22 +24,22 @@ object ShapeDAO {
 
         DDBBManager.useConnection {
 
-            query("""SELECT geom, cota FROM testing.curvas WHERE municipio = '$mun' LIMIT 1000;""").forEach {
-                val cota = it.getDouble("cota")
-                val geom = it.getObject("geom") as PGgeometry
-                val multiLine = geom.geometry as MultiLineString
-
-                val line = mutableListOf<Vector3f>()
-
-                multiLine.lines.forEach {
-                    it.points.forEach {
-                        it.z = cota
-                        addPoint(it, line)
-                    }
-                }
-
-                lines.add(line)
-            }
+            //            query("""SELECT geom, cota FROM testing.curvas WHERE municipio = '$mun' LIMIT 1000;""").forEach {
+//                val cota = it.getDouble("cota")
+//                val geom = it.getObject("geom") as PGgeometry
+//                val multiLine = geom.geometry as MultiLineString
+//
+//                val line = mutableListOf<Vector3f>()
+//
+//                multiLine.lines.forEach {
+//                    it.points.forEach {
+//                        it.z = cota
+//                        addPoint(it, line)
+//                    }
+//                }
+//
+//                lines.add(line)
+//            }
         }
 
         val vertices = mutableListOf<Vector3f>()
@@ -65,8 +68,14 @@ object ShapeDAO {
             val maxY = 4750077.070013605f + pos.second * 1000 + 1000
 
             val area = "$minX $minY,$minX $maxY,$maxX $maxY,$maxX $minY,$minX $minY"
+//            val sql = """
+//                SELECT geom, plantas
+//                FROM "edificación alturas", ST_GeomFromText('POLYGON(($area))') AS area
+//                WHERE municipio = '078' AND ST_Within(geom, area);
+//                      """
+
             val sql = """
-                SELECT geom, plantas
+                SELECT geom as geom, plantas
                 FROM "edificación alturas", ST_GeomFromText('POLYGON(($area))') AS area
                 WHERE municipio = '078' AND ST_Within(geom, area);
                       """
@@ -75,18 +84,27 @@ object ShapeDAO {
 
             query(sql).onEach { count++ }.forEach {
                 val geom = it.getObject("geom") as PGgeometry
-                val foors = it.getInt("plantas")
+                val floors = it.getInt("plantas")
                 val multiPolygon = geom.geometry as MultiPolygon
 
-                multiPolygon.polygons.forEach loop@{ polygon ->
-                    addPolygon(polygon, foors, vertices, shapes)
+                multiPolygon.polygons.forEach loop@ { polygon ->
+                    (0 until polygon.numRings())
+                            .map { polygon.getRing(it) }
+                            .forEach { ring ->
+                                val points = ring.points
+                                        .map { it.toVextor3f().apply { y = floors * 3.5f } }
+
+                                shapes.add(Shape((vertices.size until vertices.size + points.size).toList()))
+                                vertices.addAll(points)
+                            }
+//                    addPolygon(polygon, floors, vertices, shapes)
                 }
             }
             println("Loaded $count geometries")
             System.gc()
         }
 
-        return Model(vertices, shapes, ShapeType.MESH)
+        return Model(vertices, shapes, ShapeType.POLYGONS)
     }
 
 
@@ -165,6 +183,20 @@ object ShapeDAO {
 //            }
 //        }
 //    }
+
+    fun Point.toVextor3f(): Vector3f {
+        val minX = 538973.6319697625f
+        val minY = 4750077.070013605f
+
+        val scale = 1
+        val hScale = 1
+
+        return Vector3f(
+                scale * -(x.toFloat() - minX),
+                hScale * (z.toFloat()),
+                scale * (y.toFloat() - minY)
+        )
+    }
 
     private fun addPoint(p: Point, vertexList: MutableList<Vector3f>) {
         val minX = 538973.6319697625f

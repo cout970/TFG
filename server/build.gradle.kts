@@ -2,7 +2,6 @@ import org.jetbrains.kotlin.gradle.dsl.Coroutines
 import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.js.translate.context.Namer.kotlin
-import java.util.regex.Pattern.compile
 
 val kotlinVersion = "1.2.21"
 val kotlinCoroutinesVersion = "0.22.2"

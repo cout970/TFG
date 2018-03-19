@@ -1,7 +1,9 @@
 import {
-    BufferGeometry, Color, Face3, FaceColors, Geometry, Line, LineBasicMaterial, Math, Mesh, MeshPhongMaterial,
+    BufferGeometry, Color, ExtrudeGeometry, Face3, FaceColors, Geometry, Line, LineBasicMaterial, Math, Mesh,
+    MeshBasicMaterial,
+    MeshPhongMaterial,
     MeshStandardMaterial,
-    Object3D, Shape,
+    Object3D, Shape, ShapeGeometry,
     ShapeUtils,
     Vector3, VertexColors
 } from "three";
@@ -34,11 +36,41 @@ export class MeshFactory {
 
                 return new Line(new BufferGeometry().setFromPoints(points), material)
             })
+        } else if (model.type == "POLYGONS") {
+            let shapes = []
+            let height = 0
+
+            model.shapes.forEach(s => {
+                let shape = new Shape()
+                let pos = s.indices[0]
+
+                height = model.vertex[pos].y
+
+                shape.moveTo(model.vertex[pos].x, model.vertex[pos].z)
+                for (let i = 1; i < s.indices.length; i++) {
+                    shape.lineTo(model.vertex[s.indices[i]].x, model.vertex[s.indices[i]].z)
+
+                }
+                shapes.push(shape)
+            })
+
+            let geometry = new ExtrudeGeometry(shapes, {
+                steps: 2,
+                amount: height,
+                bevelEnabled: false
+            });
+            geometry.rotateX(Math.degToRad(-90))
+
+            let material = new MeshBasicMaterial({color: 0x00ff00 * height / (3.5 * 14)})
+
+            return [new Mesh(new BufferGeometry().fromGeometry(geometry), material)]
+
         } else {
             let geometry = new Geometry()
             let material = new MeshPhongMaterial()
             // material.wireframe = true
             material.vertexColors = VertexColors
+
 
             model.vertex.forEach(vec => {
                 geometry.vertices.push(new Vector3(vec.x, vec.y, vec.z))
