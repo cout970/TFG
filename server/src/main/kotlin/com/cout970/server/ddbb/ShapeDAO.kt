@@ -54,6 +54,53 @@ object ShapeDAO {
         return Model(vertices, shapes, ShapeType.LINE)
     }
 
+    fun getStreets(pos: Pair<Int, Int>): Model {
+
+        val vertices = mutableListOf<Vector3f>()
+        val shapes = mutableListOf<Shape>()
+
+        DDBBManager.useConnection {
+
+            val minX = 538973.6319697625f + pos.first * 1000
+            val minY = 4750077.070013605f + pos.second * 1000
+
+            val maxX = 538973.6319697625f + pos.first * 1000 + 1000
+            val maxY = 4750077.070013605f + pos.second * 1000 + 1000
+
+            val area = "$minX $minY,$minX $maxY,$maxX $maxY,$maxX $minY,$minX $minY"
+
+            val sql = """
+                SELECT geom, ancho
+                FROM calles, ST_GeomFromText('POLYGON(($area))') AS area
+                WHERE municipio = '078' AND ST_Within(geom, area);
+                      """
+
+            var count = 0
+
+            query(sql).onEach { count++ }.forEach {
+                val geom = it.getObject("geom") as PGgeometry
+                val ancho = it.getInt("ancho")
+                val geometry = geom.geometry
+
+                val multiPolygon = geom.geometry as MultiPolygon
+
+                multiPolygon.polygons.forEach loop@ { polygon ->
+                    (0 until polygon.numRings())
+                            .map { polygon.getRing(it) }
+                            .forEach { ring ->
+                                val points = ring.points.map { it.toVextor3f() }
+
+                                shapes.add(Shape((vertices.size until vertices.size + points.size).toList()))
+                                vertices.addAll(points)
+                            }
+                }
+            }
+            System.gc()
+        }
+
+        return Model(vertices, shapes, ShapeType.POLYGONS)
+    }
+
     fun getBuildings(pos: Pair<Int, Int>): Model {
 
         val vertices = mutableListOf<Vector3f>()
@@ -75,7 +122,7 @@ object ShapeDAO {
 //                      """
 
             val sql = """
-                SELECT geom as geom, plantas
+                SELECT geom, plantas
                 FROM "edificación alturas", ST_GeomFromText('POLYGON(($area))') AS area
                 WHERE municipio = '078' AND ST_Within(geom, area);
                       """
@@ -125,7 +172,7 @@ object ShapeDAO {
                 ring.forEach {
                     vertex[index++] = it.x
                     vertex[index++] = it.y
-                    addPoint(Point(it.x, it.y, it.z), vertices)
+                    vertices += Point(it.x, it.y, it.z).toVextor3f()
                 }
 
                 val indices = Earcut.earcut(vertex)
@@ -140,7 +187,7 @@ object ShapeDAO {
             } else {
                 val offset = vertices.size
                 ring.forEach {
-                    addPoint(Point(it.x, it.y, it.z), vertices)
+                    vertices += Point(it.x, it.y, it.z).toVextor3f()
                 }
                 shapes += Shape(listOf(
                         offset,
@@ -199,16 +246,6 @@ object ShapeDAO {
     }
 
     private fun addPoint(p: Point, vertexList: MutableList<Vector3f>) {
-        val minX = 538973.6319697625f
-        val minY = 4750077.070013605f
-
-        val scale = 1
-        val hScale = 1
-
-        vertexList.add(Vector3f(
-                scale * -(p.x.toFloat() - minX),
-                hScale * (p.z.toFloat()),
-                scale * (p.y.toFloat() - minY)
-        ))
+        vertexList.add(p.toVextor3f())
     }
 }

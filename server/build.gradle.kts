@@ -11,7 +11,7 @@ val postgisVersion = "2.1.7.2"
 val postgresqlVersion = "42.2.1"
 val junitVersion = "4.12"
 val gsonVersion = "2.8.2"
-val geotoolsVersion = "2.7.7-NB72"
+val geotoolsVersion = "20-SNAPSHOT"
 val jcsgVersion = "0.5.6"
 val gdalVersion = "1.11.2"
 
@@ -27,7 +27,11 @@ dependencies {
     compile("net.postgis:postgis-jdbc:$postgisVersion")
     compile("org.postgresql:postgresql:$postgresqlVersion")
     compile("com.google.code.gson:gson:$gsonVersion")
-    compile("nl.cloudfarming.client:lib-geotools:$geotoolsVersion")
+    compile("org.geotools:gt-shapefile:$geotoolsVersion")
+    compile("org.geotools:gt-swing:$geotoolsVersion")
+    compile("org.geotools:gt-geotiff:$geotoolsVersion")
+    compile("org.geotools:gt-epsg-hsql:$geotoolsVersion")
+    compile("javax.media:jai-core:1.1.3")
     compile("org.gdal:gdal:$gdalVersion")
     compile("eu.printingin3d.javascad:javascad:0.9.0.12")
 

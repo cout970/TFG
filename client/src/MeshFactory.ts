@@ -61,35 +61,36 @@ export class MeshFactory {
             });
             geometry.rotateX(Math.degToRad(-90))
 
-            let material = new MeshBasicMaterial({color: 0x00ff00 * height / (3.5 * 14)})
+            let material = new MeshBasicMaterial({color: 0x00ff00})
 
             return [new Mesh(new BufferGeometry().fromGeometry(geometry), material)]
 
         } else {
             let geometry = new Geometry()
             let material = new MeshPhongMaterial()
-            // material.wireframe = true
+            material.wireframe = true
             material.vertexColors = VertexColors
 
 
             model.vertex.forEach(vec => {
-                geometry.vertices.push(new Vector3(vec.x, vec.y, vec.z))
+                geometry.vertices.push(new Vector3(vec.x, vec.y / 100, vec.z))
             })
 
             let low = new Color(0, 1, 0)
-            let high = new Color(1, 0, 0)
+            let high = new Color(0x22 / 255, 0x20 / 255, 0x1E / 255)
+            let blue = new Color(0, 0.5, 1)
 
             model.shapes.forEach(shape => {
                 let ind = shape.indices
                 let face = new Face3(ind[0], ind[1], ind[2])
 
-                let h1 = model.vertex[ind[0]].y
-                let h2 = model.vertex[ind[1]].y
-                let h3 = model.vertex[ind[2]].y
+                let h1 = model.vertex[ind[0]].y / 2000
+                let h2 = model.vertex[ind[1]].y / 2000
+                let h3 = model.vertex[ind[2]].y / 2000
 
-                face.vertexColors[0] = low.clone().lerp(high, h1 / 15)
-                face.vertexColors[1] = low.clone().lerp(high, h2 / 15)
-                face.vertexColors[2] = low.clone().lerp(high, h3 / 15)
+                face.vertexColors[0] = h1 == 0 ? blue : low.clone().lerp(high, h1)
+                face.vertexColors[1] = h2 == 0 ? blue : low.clone().lerp(high, h2)
+                face.vertexColors[2] = h3 == 0 ? blue : low.clone().lerp(high, h3)
                 geometry.faces.push(face)
             })
 

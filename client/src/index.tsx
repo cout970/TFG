@@ -11,8 +11,8 @@ function main() {
 
     ReactDOM.render(<Application/>, document.getElementById('root'))
 
-    WorldHandler.init()
     Environment.onTick = WorldHandler.onTick
     Environment.init()
+    WorldHandler.init()
     Environment.gameLoop()
 }

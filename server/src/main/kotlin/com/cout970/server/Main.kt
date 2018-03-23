@@ -1,11 +1,14 @@
 package com.cout970.server
+
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import com.cout970.server.ddbb.DDBBManager
 import com.cout970.server.rest.Rest.httpServer
+import com.cout970.server.rest.TerrainLoader
 import com.cout970.server.util.ifFail
 import org.slf4j.LoggerFactory
 import java.util.*
+
 
 fun main(args: Array<String>) {
 
@@ -21,6 +24,13 @@ fun main(args: Array<String>) {
         return
     }
     println("Done: DDBB connection")
+
+    println("Loading height maps")
+    if (TerrainLoader.loadHeightMaps()) {
+        println("Done: Map loading")
+    } else {
+        println("Exception in Map loading")
+    }
 
     println("Starting: http server")
     httpServer()

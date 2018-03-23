@@ -1,7 +1,7 @@
 package com.cout970.server.rest
 
 import com.cout970.server.ddbb.ShapeDAO
-import com.cout970.server.util.generateDebugHeightMap
+import com.cout970.server.util.heightMapToModel
 import com.google.gson.GsonBuilder
 import org.joml.Vector3f
 import spark.Request
@@ -15,6 +15,8 @@ object Rest {
             .enableComplexMapKeySerialization()
             .create()
 
+    var terrainLevel0: Map<Pair<Int, Int>, HeightMap> = mutableMapOf()
+    var terrainLevel1: Map<Pair<Int, Int>, HeightMap> = mutableMapOf()
 
     fun httpServer() {
 
@@ -26,10 +28,14 @@ object Rest {
                 File("core-js/web/index.html").readText()
             }
 
-            get("/api/height/:x/:y") {
+            get("/api/height/:x/:y/level/:level") {
                 val (x, y) = parseVector2(request)
+                val level = request.params("level")
+                val source = if (level == "0") terrainLevel0 else terrainLevel1
 
-                gson.toJson(generateDebugHeightMap(x, y))
+                val map = source[x to y] ?: return@get "{ \"error\": \"No map\" }"
+
+                gson.toJson(heightMapToModel(map, x, y))
             }
 
             /// multiline test
@@ -40,6 +46,11 @@ object Rest {
             /// buildings test
             get("/api/buildings/:x/:y") {
                 gson.toJson(ShapeDAO.getBuildings(parseVector2(request)))
+            }
+
+            /// buildings test
+            get("/api/streets/:x/:y") {
+                gson.toJson(ShapeDAO.getStreets(parseVector2(request)))
             }
 
             // web
@@ -60,7 +71,7 @@ object Rest {
         }
     }
 
-    private fun parseVector2(request: Request): Pair<Int, Int>{
+    private fun parseVector2(request: Request): Pair<Int, Int> {
         val xStr = request.params("x")
         val yStr = request.params("y")
 

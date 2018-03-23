@@ -19,6 +19,7 @@ export default class Environment {
     static ground: Group
     static buildings: Group
     static streets: Group
+    static axis: Group
 
     static onTick: () => any
 
@@ -141,9 +142,13 @@ export default class Environment {
         this.streets = new Group()
         this.streets.name = "Streets"
 
+        this.axis = new Group()
+        this.axis.name = "axis"
+
         this.scene.add(this.ground)
         this.scene.add(this.buildings)
         this.scene.add(this.streets)
+        this.scene.add(this.axis)
     }
 
     static gameLoop() {
