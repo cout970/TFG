@@ -1,7 +1,8 @@
 package com.cout970.server.rest
 
 import com.cout970.server.ddbb.ShapeDAO
-import com.cout970.server.util.heightMapToModel
+import com.cout970.server.rest.TerrainLoader.terrainLevel
+import com.cout970.server.util.chunkToModel
 import com.google.gson.GsonBuilder
 import org.joml.Vector3f
 import spark.Request
@@ -15,8 +16,6 @@ object Rest {
             .enableComplexMapKeySerialization()
             .create()
 
-    var terrainLevel0: Map<Pair<Int, Int>, HeightMap> = mutableMapOf()
-    var terrainLevel1: Map<Pair<Int, Int>, HeightMap> = mutableMapOf()
 
     fun httpServer() {
 
@@ -28,19 +27,11 @@ object Rest {
                 File("core-js/web/index.html").readText()
             }
 
-            get("/api/height/:x/:y/level/:level") {
+            get("/api/height/:x/:y") {
                 val (x, y) = parseVector2(request)
-                val level = request.params("level")
-                val source = if (level == "0") terrainLevel0 else terrainLevel1
+                val map = terrainLevel[x to y] ?: return@get "{ \"error\": \"No map\" }"
 
-                val map = source[x to y] ?: return@get "{ \"error\": \"No map\" }"
-
-                gson.toJson(heightMapToModel(map, x, y))
-            }
-
-            /// multiline test
-            get("/api/multiline/:mun") {
-                gson.toJson(ShapeDAO.getMultiLine(request.params("mun")))
+                gson.toJson(chunkToModel(map))
             }
 
             /// buildings test

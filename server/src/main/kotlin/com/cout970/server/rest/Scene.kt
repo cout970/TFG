@@ -28,6 +28,10 @@ object Defs {
             val transparency: Float
     )
 
+    data class BufferAttribute(val attributeName: String, val data: FloatArray, val count: Int)
+
+    data class Geometry(val attributes: List<BufferAttribute>)
+
     sealed class Camera {
         data class PerspectiveCamera(val fov: Float, val aspect: Float, val near: Float, val far: Float) : Camera()
         data class OrthograficCamera(val sizeX: Float, val sizeZ: Float, val near: Float, val far: Float) : Camera()
@@ -65,14 +69,14 @@ object Defs {
 
     sealed class Shape {
         data class ShapeAtPoint(
-                val model: Model,
+                val geometry: Geometry,
                 val position: Vector3,
                 val rotation: Rotation,
                 val scale: Vector3
         ) : Shape()
 
         data class ShapeAtLine(
-                val model: Model,
+                val geometry: Geometry,
                 val lineStart: Vector3,
                 val lineEnd: Vector3,
                 val rotation: Rotation, // item rotation, not line rotation
@@ -83,7 +87,7 @@ object Defs {
         ) : Shape()
 
         data class ShapeAtSurface(
-                val model: Model,
+                val geometry: Geometry,
                 val rotation: Rotation,
                 val scale: Vector3,
                 val resolution: Float,
@@ -92,7 +96,7 @@ object Defs {
 
         // TODO
 //        data class Extrude(
-//                val model: Model,
+//                val geometry: Geometry,
 //                val rotation: Rotation,
 //                val scale: Vector3,
 //                val resolution: Float,

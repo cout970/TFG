@@ -1,61 +1,74 @@
 package com.cout970.server.util
 
-import com.cout970.server.rest.*
-import org.joml.SimplexNoise
+import com.cout970.server.rest.Chunk
+import com.cout970.server.rest.Defs
+import com.cout970.server.rest.HeightMap
 import org.joml.Vector3f
 
 /**
  *
  */
-private fun generateHeightMapAux(x: Int, y: Int): HeightMap {
-    val size = 33
-    val map = heightMapOfSize(size, size)
-
-    for (i in 0 until size) {
-        for (j in 0 until size) {
-            val noise = SimplexNoise.noise(i / 32f + x, j / 32f + y)
-            val base = noise * 0.5f + 1f
-            map[i, j] = base * 10
-        }
-    }
-    return map
+fun chunkToModel(chunk: Chunk): Defs.Geometry {
+    return heightMapToModel(chunk.heights,
+            Vector3f(chunk.posX, 0f, chunk.posY),
+            Vector3f(chunk.scale, 1f, chunk.scale)
+    )
 }
 
-fun generateDebugHeightMap(x: Int, y: Int): Model {
-    val map = generateHeightMapAux(x, y)
-    return heightMapToModel(map, x, y)
-}
+fun heightMapToModel(map: HeightMap, offset: Vector3f, scale: Vector3f): Defs.Geometry {
 
+    val low = Vector3f(0f, 1f, 0f)
+    val high = Vector3f(0x22 / 255f, 0x20 / 255f, 0x1E / 255f)
+    val blue = Vector3f(0f, 0.5f, 1f)
 
-fun heightMapToModel(map: HeightMap, x: Int = 0, y: Int = 0): Model {
-    val vertices = mutableListOf<Vector3f>()
-    val shapes = mutableListOf<Shape>()
+    val size = map.width * map.height * 6 * 3
+    val vertexData = FloatArray(size)
+    val colorData = FloatArray(size)
+    var ptr = 0
+    var ptr2 = 0
 
-    val offsetX = x * (map.width - 1)
-    val offsetY = y * (map.height - 1)
+    fun append(i: Int, j: Int) {
+        val height = map[i, j]
 
-    for (i in 0 until map.width) {
-        for (j in 0 until map.height) {
-            vertices.add(Vector3f(
-                    i.toFloat() + offsetX,
-                    map[i, j],
-                    j.toFloat() + offsetY
-            ))
-        }
+        vertexData[ptr++] = offset.x + (scale.x * i / (map.width - 1))
+        vertexData[ptr++] = offset.y + scale.y * height
+        vertexData[ptr++] = offset.z + (scale.z * j / (map.height - 1))
+
+        val color = if (height == 0f) blue else Vector3f(low).lerp(high, height / 2000)
+        colorData[ptr2++] = color.x
+        colorData[ptr2++] = color.y
+        colorData[ptr2++] = color.z
     }
 
     for (i in 0 until map.width - 1) {
         for (j in 0 until map.height - 1) {
-            val a = i + j * map.width
-            val b = a + 1
-            val c = a + 1 * map.width
-            val d = a + 1 + 1 * map.width
+            append(i, j)
+            append(i, j + 1)
+            append(i + 1, j + 1)
 
-            shapes.add(Shape(listOf(a, b, c)))
-            shapes.add(Shape(listOf(b, d, c)))
+            append(i, j)
+            append(i + 1, j + 1)
+            append(i + 1, j)
         }
     }
-
-    return Model(vertices, shapes, ShapeType.MESH)
+    return Defs.Geometry(listOf(
+            Defs.BufferAttribute("position", vertexData, 3),
+            Defs.BufferAttribute("color", colorData, 3)
+    ))
 }
+
+//private fun generateHeightMapAux(x: Int, y: Int): HeightMap {
+//    val size = 33
+//    val map = heightMapOfSize(size, size)
+//
+//    for (i in 0 until size) {
+//        for (j in 0 until size) {
+//            val noise = SimplexNoise.noise(i / 32f + x, j / 32f + y)
+//            val base = noise * 0.5f + 1f
+//            map[i, j] = base * 10
+//        }
+//    }
+//    return map
+//}
+//
 

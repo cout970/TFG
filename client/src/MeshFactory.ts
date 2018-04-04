@@ -1,6 +1,7 @@
 import {
+    BufferAttribute,
     BufferGeometry, Color, ExtrudeGeometry, Face3, FaceColors, Geometry, Line, LineBasicMaterial, Math, Mesh,
-    MeshBasicMaterial,
+    MeshBasicMaterial, MeshNormalMaterial,
     MeshPhongMaterial,
     MeshStandardMaterial,
     Object3D, Shape, ShapeGeometry,
@@ -11,6 +12,22 @@ import {
 import clamp = Math.clamp;
 
 export class MeshFactory {
+
+    static toMesh(geom: ExtGeometry): Object3D {
+        let geometry = new BufferGeometry()
+        let material = new MeshPhongMaterial()
+
+        // material.wireframe = true
+        material.vertexColors = FaceColors
+
+        geom.attributes.forEach(attr => {
+            geometry.addAttribute(attr.attributeName, new BufferAttribute(Float32Array.from(attr.data), attr.count))
+        })
+
+        geometry.computeVertexNormals()
+
+        return new Mesh(geometry, material)
+    }
 
     static modelToObjects(model: Model): Array<Object3D> {
         if (model.type == "LINE") {

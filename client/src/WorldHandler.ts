@@ -1,6 +1,6 @@
 import {MeshFactory} from "./MeshFactory";
 import Environment from "./Environment";
-import {Mesh, MeshBasicMaterial, Shape, ShapeGeometry} from "three";
+import {Geometry, Line, LineBasicMaterial, Mesh, MeshBasicMaterial, Shape, ShapeGeometry, Vector3} from "three";
 
 export class WorldHandler {
 
@@ -36,18 +36,18 @@ export class WorldHandler {
         })
 
 
-        // for (let x = -5; x < 0; x++) {
-        //     for (let z = -5; z < 0; z++) {
-        //
-        //         this.get(`/api/buildings/${x}/${z}`)
-        //         .then(i => MeshFactory.modelToObjects(i))
-        //         .then(i => i.forEach(it => {
-        //             Environment.buildings.add(it)
-        //         }))
-        //         .catch(i => console.log(i))
-        //
-        //     }
-        // }
+        for (let x = -5; x < 0; x++) {
+            for (let z = -5; z < 0; z++) {
+
+                this.get(`/api/buildings/${x}/${z}`)
+                .then(i => MeshFactory.modelToObjects(i))
+                .then(i => i.forEach(it => {
+                    Environment.buildings.add(it)
+                }))
+                .catch(i => console.log(i))
+
+            }
+        }
 
         // for (let x = -5; x < 0; x++) {
         //     for (let z = -5; z < 0; z++) {
@@ -62,45 +62,38 @@ export class WorldHandler {
         //
         // }
 
+        let geometry = new Geometry();
+        let geometry1 = new Geometry();
+        let geometry2 = new Geometry();
+        let material = new LineBasicMaterial({color: 0xff0000})
+        let material1 = new LineBasicMaterial({color: 0x00ff00})
+        let material2 = new LineBasicMaterial({color: 0x0000ff})
 
-        let x = 0, y = 0;
-        let heartShape = new Shape();
+        geometry.vertices.push(new Vector3(-100, 0, 0))
+        geometry.vertices.push(new Vector3(100, 0, 0))
 
-        heartShape.moveTo(x + 5, y + 5);
-        heartShape.bezierCurveTo(x + 5, y + 5, x + 4, y, x, y);
-        heartShape.bezierCurveTo(x - 6, y, x - 6, y + 7, x - 6, y + 7);
-        heartShape.bezierCurveTo(x - 6, y + 11, x - 3, y + 15.4, x + 5, y + 19);
-        heartShape.bezierCurveTo(x + 12, y + 15.4, x + 16, y + 11, x + 16, y + 7);
-        heartShape.bezierCurveTo(x + 16, y + 7, x + 16, y, x + 10, y);
-        heartShape.bezierCurveTo(x + 7, y, x + 5, y + 5, x + 5, y + 5);
+        geometry1.vertices.push(new Vector3(0, -100, 0))
+        geometry1.vertices.push(new Vector3(0, 100, 0))
 
+        geometry2.vertices.push(new Vector3(0, 0, -100))
+        geometry2.vertices.push(new Vector3(0, 0, 100))
 
-        let geometry = new ShapeGeometry(heartShape);
-        let material = new MeshBasicMaterial({color: 0x00ff00});
-        Environment.axis.add(new Mesh(geometry, material))
-        //
+        Environment.axis.add(new Line(geometry, material))
+        Environment.axis.add(new Line(geometry1, material1))
+        Environment.axis.add(new Line(geometry2, material2))
+
+        this.loadHeightMap()
+    }
+
+    private static loadHeightMap() {
         for (let x = 0; x < 18; x++) {
             for (let z = 0; z < 18; z++) {
-                this.get(`/api/height/${x}/${z}/level/0`)
-                .then(i => MeshFactory.modelToObjects(i))
-                .then(i => i.forEach(it => {
-                    Environment.ground.add(it)
-                }))
+                this.get(`/api/height/${x}/${z}`)
+                .then(i => MeshFactory.toMesh(i))
+                .then(i => Environment.ground.add(i))
                 .catch(i => console.log(i))
             }
         }
-
-
-        // for (let x = 0; x < 18; x++) {
-        //     for (let z = 0; z < 18; z++) {
-        //         this.get(`/api/height/${x}/${z}/level/1`)
-        //         .then(i => MeshFactory.modelToObjects(i))
-        //         .then(i => i.forEach(it => {
-        //             Environment.ground.add(it)
-        //         }))
-        //         .catch(i => console.log(i))
-        //     }
-        // }
     }
 
     private static get(str: string): Promise<any> {

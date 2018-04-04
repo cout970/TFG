@@ -14,3 +14,13 @@ interface Model {
     type: string
 }
 
+
+interface ExtBufferAttribute {
+    attributeName: string
+    data: Array<number>
+    count: number
+}
+
+interface ExtGeometry {
+    attributes: Array<ExtBufferAttribute>
+}

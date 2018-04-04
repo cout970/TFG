@@ -43,7 +43,7 @@ export default class Environment {
 
         // Camera and render dimensions
         this.renderer.setSize(canvas.width, canvas.height)
-        this.camera = new PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 50000)
+        this.camera = new PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 500000)
 
         // Move the camera away from the center so the object is not inside you
         this.camera.position.setZ(5)

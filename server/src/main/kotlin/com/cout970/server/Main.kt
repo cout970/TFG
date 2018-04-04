@@ -26,7 +26,7 @@ fun main(args: Array<String>) {
     println("Done: DDBB connection")
 
     println("Loading height maps")
-    if (TerrainLoader.loadHeightMaps()) {
+    if (!TerrainLoader.loadHeightMaps()) {
         println("Done: Map loading")
     } else {
         println("Exception in Map loading")
