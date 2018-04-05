@@ -2,7 +2,6 @@ package com.cout970.server.rest
 
 import com.cout970.server.ddbb.ShapeDAO
 import com.cout970.server.rest.TerrainLoader.terrainLevel
-import com.cout970.server.util.chunkToModel
 import com.google.gson.GsonBuilder
 import org.joml.Vector3f
 import spark.Request
@@ -31,7 +30,7 @@ object Rest {
                 val (x, y) = parseVector2(request)
                 val map = terrainLevel[x to y] ?: return@get "{ \"error\": \"No map\" }"
 
-                gson.toJson(chunkToModel(map))
+                gson.toJson(MeshBuilder.chunkToModel(map))
             }
 
             /// buildings test

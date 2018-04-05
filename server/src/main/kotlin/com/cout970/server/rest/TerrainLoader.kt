@@ -9,14 +9,17 @@ import java.io.File
 object TerrainLoader {
 
     val ORIGIN = Vector3f(538973.6319697625f, 0f, 4750077.070013605f)
+    private val envelope = Vector3f()
     val terrainLevel = mutableMapOf<Pair<Int, Int>, Chunk>()
 
     fun getHeight(x: Float, y: Float): Float {
         val scale = 512 * 25
-        val pos = (x.toInt() / scale) to (y.toInt() / scale)
+        val absX = x - envelope.x
+        val absY = y - envelope.z
+        val pos = absX.toInt() / scale to absY.toInt() / scale
         val chunk: Chunk = terrainLevel[pos] ?: return 0f
-        val gridX = (chunk.heights.width * (x - pos.first) / scale).toInt()
-        val gridY = (chunk.heights.height * (y - pos.second) / scale).toInt()
+        val gridX = (chunk.heights.width * (absX - pos.first * scale) / scale).toInt()
+        val gridY = (chunk.heights.height * (absY - pos.second * scale) / scale).toInt()
         return chunk.heights[gridX, gridY]
     }
 
@@ -27,6 +30,8 @@ object TerrainLoader {
         val image = coverage.renderedImage
         val pos = coverage.envelope2D.minX.toFloat() to coverage.envelope2D.minY.toFloat()
 
+        envelope.x = pos.first
+        envelope.z = pos.second
         terrainLevel += rasterize(image, pos, 512, 16, 25f)
     }
 
@@ -65,7 +70,7 @@ object TerrainLoader {
                     }
 
                     val posX = pos.first + x * pixelsPerChunk * meters - ORIGIN.x
-                    val posY = pos.second + y * pixelsPerChunk * meters - ORIGIN.y
+                    val posY = pos.second + y * pixelsPerChunk * meters - ORIGIN.z
                     map += (x to y) to Chunk(posX, posY, heightMap, 0f, meters * pixelsPerChunk)
                 }
             }

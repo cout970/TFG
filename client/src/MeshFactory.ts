@@ -16,6 +16,7 @@ export class MeshFactory {
     static toMesh(geom: ExtGeometry): Object3D {
         let geometry = new BufferGeometry()
         let material = new MeshPhongMaterial()
+        material.wireframe = true
 
         // material.wireframe = true
         material.vertexColors = FaceColors
