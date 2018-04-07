@@ -16,12 +16,14 @@ export class MeshFactory {
     static toMesh(geom: ExtGeometry): Object3D {
         let geometry = new BufferGeometry()
         let material = new MeshPhongMaterial()
-        material.wireframe = true
 
         // material.wireframe = true
         material.vertexColors = FaceColors
 
+        console.log(geom.attributes)
         geom.attributes.forEach(attr => {
+            console.log(attr.attributeName)
+            console.log(attr.data)
             geometry.addAttribute(attr.attributeName, new BufferAttribute(Float32Array.from(attr.data), attr.count))
         })
 

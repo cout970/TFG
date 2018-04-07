@@ -45,6 +45,6 @@ tasks.withType<KotlinCompile> {
     kotlinOptions.jvmTarget = "1.8"
 }
 
-configure<KotlinProjectExtension> {
+kotlin {
     experimental.coroutines = Coroutines.ENABLE
 }

@@ -30,12 +30,19 @@ object Rest {
                 val (x, y) = parseVector2(request)
                 val map = terrainLevel[x to y] ?: return@get "{ \"error\": \"No map\" }"
 
-                gson.toJson(MeshBuilder.chunkToModel(map))
+                val geom = MeshBuilder.chunkToModel(map)
+                gson.toJson(geom).apply {
+                    System.gc()
+                }
             }
 
             /// buildings test
             get("/api/buildings/:x/:y") {
                 gson.toJson(ShapeDAO.getBuildings(parseVector2(request)))
+            }
+
+            get("/api/buildings2/:x/:y") {
+                gson.toJson(ShapeDAO.getBuildingsIn(parseVector2(request)))
             }
 
             /// buildings test

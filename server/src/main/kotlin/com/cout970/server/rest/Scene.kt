@@ -1,16 +1,14 @@
 package com.cout970.server.rest
 
+import org.joml.Vector3f
+
+typealias Vector3 = Vector3f
+
 object Defs {
 
-    data class Vector3(
-            val x: Float,
-            val y: Float,
-            val z: Float
-    )
-
     data class Rotation(
-            val axis: Vector3,
-            val angle: Float
+            val angle: Float,
+            val axis: Vector3
     )
 
     data class Color(
@@ -32,15 +30,12 @@ object Defs {
 
     data class Geometry(val attributes: List<BufferAttribute>)
 
-    sealed class Camera {
-        data class PerspectiveCamera(val fov: Float, val aspect: Float, val near: Float, val far: Float) : Camera()
-        data class OrthograficCamera(val sizeX: Float, val sizeZ: Float, val near: Float, val far: Float) : Camera()
-    }
+    enum class CameraType { PERSPECTIVE, ORTHOGRAFIC }
 
     data class ViewPoint(
             val location: Vector3,
             val orientation: Rotation,
-            val camera: Camera
+            val camera: CameraType
     )
 
     data class Ground(
@@ -49,6 +44,8 @@ object Defs {
             val material: Material
 //            val texture: TODO()
     )
+
+    data class Model(val geometry: Geometry, val material: Material)
 
     sealed class GroundProjection {
 
@@ -69,14 +66,14 @@ object Defs {
 
     sealed class Shape {
         data class ShapeAtPoint(
-                val geometry: Geometry,
+                val model: Model,
                 val position: Vector3,
                 val rotation: Rotation,
                 val scale: Vector3
         ) : Shape()
 
         data class ShapeAtLine(
-                val geometry: Geometry,
+                val model: Model,
                 val lineStart: Vector3,
                 val lineEnd: Vector3,
                 val rotation: Rotation, // item rotation, not line rotation
@@ -87,7 +84,7 @@ object Defs {
         ) : Shape()
 
         data class ShapeAtSurface(
-                val geometry: Geometry,
+                val geometry: Model,
                 val rotation: Rotation,
                 val scale: Vector3,
                 val resolution: Float,
@@ -96,7 +93,7 @@ object Defs {
 
         // TODO
 //        data class Extrude(
-//                val geometry: Geometry,
+//                val model: Model,
 //                val rotation: Rotation,
 //                val scale: Vector3,
 //                val resolution: Float,
@@ -121,7 +118,7 @@ object Defs {
             val title: String,
             val abstract: String,
             val viewPoints: List<ViewPoint>,
-            val ground: Ground,
+//            val ground: Ground,
             val layers: List<Layer>
     )
 }

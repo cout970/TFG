@@ -6,14 +6,12 @@ import com.cout970.server.ddbb.DDBBManager
 import com.cout970.server.rest.Rest.httpServer
 import com.cout970.server.rest.TerrainLoader
 import com.cout970.server.util.ifFail
-import org.geotools.data.DataStoreFinder
 import org.slf4j.LoggerFactory
 import java.util.*
 
 
 fun main(args: Array<String>) {
 
-    test()
     println("Starting...")
     val root = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
     root.level = Level.INFO
@@ -37,17 +35,4 @@ fun main(args: Array<String>) {
     println("Starting: http server")
     httpServer()
     println("Done: http server")
-}
-
-fun test() {
-    val params = mutableMapOf<String, Any>()
-    params.put("dbtype", "postgis")
-    params.put("host", "localhost")
-    params.put("port", 5432)
-    params.put("schema", "public")
-    params.put("database", "tfg")
-    params.put("user", "postgres")
-    params.put("passwd", "root")
-
-    val dataStore = DataStoreFinder.getDataStore(params)
 }

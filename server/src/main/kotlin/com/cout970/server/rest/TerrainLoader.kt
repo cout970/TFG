@@ -5,12 +5,29 @@ import org.geotools.gce.geotiff.GeoTiffReader
 import org.joml.Vector3f
 import java.awt.image.RenderedImage
 import java.io.File
+import kotlin.math.max
+import kotlin.math.min
 
 object TerrainLoader {
 
     val ORIGIN = Vector3f(538973.6319697625f, 0f, 4750077.070013605f)
     private val envelope = Vector3f()
     val terrainLevel = mutableMapOf<Pair<Int, Int>, Chunk>()
+
+    fun relativize(coords: List<Double>): List<Float> {
+        val result = mutableListOf<Float>()
+
+        repeat(coords.size / 3) {
+            val x = coords[it * 3].toFloat()
+            val z = coords[it * 3 + 1].toFloat()
+            val y = coords[it * 3 + 2].toFloat()
+
+            result += x - ORIGIN.x
+            result += y //+ getHeight(x, y)
+            result += z - ORIGIN.z
+        }
+        return result
+    }
 
     fun getHeight(x: Float, y: Float): Float {
         val scale = 512 * 25
@@ -32,16 +49,15 @@ object TerrainLoader {
 
         envelope.x = pos.first
         envelope.z = pos.second
-        terrainLevel += rasterize(image, pos, 512, 16, 25f)
+        terrainLevel += rasterize(image, pos, 512, 25f)
     }
 
-    fun rasterize(image: RenderedImage, pos: Pair<Float, Float>, pixelsPerChunk: Int, vertexPerChunk: Int, meters: Float)
+    fun rasterize(image: RenderedImage, pos: Pair<Float, Float>, pixelsPerChunk: Int, meters: Float)
             : Map<Pair<Int, Int>, Chunk> {
 
         val data = image.data
         val xRange = 0 until image.width
         val yRange = 0 until image.height
-        val relScale = (pixelsPerChunk / vertexPerChunk)
 
         val map = mutableMapOf<Pair<Int, Int>, Chunk>()
 
@@ -49,8 +65,15 @@ object TerrainLoader {
         for (x in 0..Math.ceil(image.width / pixelsPerChunk.toDouble()).toInt()) {
             for (y in 0..Math.ceil(image.height / pixelsPerChunk.toDouble()).toInt()) {
 
-                if (ORIGIN.distance(Vector3f(pos.first + x * pixelsPerChunk * meters, 0f, pos.second + y * pixelsPerChunk * meters)) < 100000) {
+                val start = Vector3f(pos.first + x * pixelsPerChunk * meters, 0f, pos.second + y * pixelsPerChunk * meters)
 
+                if (ORIGIN.distance(start) < 100000) {
+
+                    val a = (ORIGIN.distance(start) / 100000f)
+                    val quality = -Math.log(a + 0.1)
+                    val vertexPerChunk = max(8, min(512, nearestPowerOf2((quality * 512).toInt())))
+
+                    val relScale = (pixelsPerChunk / vertexPerChunk)
                     val heightMap = heightMapOfSize(vertexPerChunk + 1, vertexPerChunk + 1)
 
                     for (i in 0..vertexPerChunk) {
@@ -79,6 +102,16 @@ object TerrainLoader {
 
         println("Chunks in map: ${map.size}")
         return map
+    }
+
+    fun nearestPowerOf2(a: Int): Int {
+        var x = a - 1
+        x = x or (x shr 1)
+        x = x or (x shr 2)
+        x = x or (x shr 4)
+        x = x or (x shr 8)
+        x = x or (x shr 16)
+        return x + 1
     }
 
     fun loadHeightMaps(): Boolean {

@@ -1,21 +1,15 @@
 package com.cout970.server.ddbb
 
-import com.cout970.server.rest.Model
-import com.cout970.server.rest.Shape
-import com.cout970.server.rest.ShapeType
-import com.cout970.server.rest.TerrainLoader
+import com.cout970.server.rest.*
 import com.cout970.server.util.earthToScene
-import eu.printingin3d.javascad.coords.Coords3d
 import org.joml.Vector3f
 import org.postgis.MultiPolygon
 import org.postgis.PGgeometry
 import org.postgis.Point
-
-
+import javax.xml.parsers.DocumentBuilderFactory
 
 
 object ShapeDAO {
-
 
     private fun getAreaString(pos: Pair<Int, Int>): String {
         val minX = TerrainLoader.ORIGIN.x + pos.first * 1000
@@ -23,7 +17,7 @@ object ShapeDAO {
         val maxX = TerrainLoader.ORIGIN.x + pos.first * 1000 + 1000
         val maxY = TerrainLoader.ORIGIN.z + pos.second * 1000 + 1000
 
-        return "$minX $minY,$minX $maxY,$maxX $maxY,$maxX $minY,$minX $minY"
+        return "ST_GeomFromText('POLYGON(($minX $minY,$minX $maxY,$maxX $maxY,$maxX $minY,$minX $minY))')"
     }
 
     fun getStreets(pos: Pair<Int, Int>): Model {
@@ -35,7 +29,7 @@ object ShapeDAO {
 
             val sql = """
                 SELECT geom, ancho
-                FROM calles, ST_GeomFromText('POLYGON((${getAreaString(pos)}))') AS area
+                FROM calles, ${getAreaString(pos)} AS area
                 WHERE municipio = '078' AND ST_Within(geom, area);
                       """
 
@@ -65,6 +59,48 @@ object ShapeDAO {
         return Model(vertices, shapes, ShapeType.POLYGONS)
     }
 
+    fun getBuildingsIn(pos: Pair<Int, Int>): Defs.Geometry {
+        val models: MutableList<Defs.Geometry> = mutableListOf()
+        var size = 0
+
+        DDBBManager.useConnection {
+
+            val query1 = """
+                SELECT ST_AsX3D(result) as x3d
+                FROM (SELECT geom
+                      FROM "edificación alturas", ${getAreaString(pos)} AS area
+                      WHERE ST_Within(geom, area)) as building,
+                     st_tesselate(building.geom) as triangleMesh,
+                     st_extrude(triangleMesh, 0, 0, 0) as extruded,
+                     st_geometryn(extruded, 1) as result;
+                """
+
+            query(query1).forEach {
+                val documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+                val document = documentBuilder.parse(it.getAsciiStream("x3d"))
+
+                val indexedFaceSet = document.childNodes.item(0)
+                val coordinates = indexedFaceSet.childNodes.item(0)
+
+                val indicesStr = indexedFaceSet.attributes.getNamedItem("coordIndex").nodeValue
+                val posStr = coordinates.attributes.getNamedItem("point").nodeValue
+
+                val indices = indicesStr.split(' ').filter { it != "-1" }.map { it.toInt() }
+                val coords = posStr.split(' ').map { it.toDouble() }
+
+                models += MeshBuilder.buildGeometry(indices, TerrainLoader.relativize(coords))
+                size++
+            }
+        }
+
+        val start = System.currentTimeMillis()
+
+        val result = models.fold(Defs.Geometry(emptyList())) { a, b -> a.merge(b) }
+
+        println("All models ($size) merged in ${System.currentTimeMillis() - start} ms")
+        return result
+    }
+
     fun getBuildings(pos: Pair<Int, Int>): Model {
 
         val vertices = mutableListOf<Vector3f>()
@@ -72,25 +108,9 @@ object ShapeDAO {
 
         DDBBManager.useConnection {
 
-            val query1 = """
-                SELECT tess as a
-                FROM (SELECT geom FROM "edificación alturas" LIMIT 1) as g,
-                    st_tesselate(g.geom) as tris, st_extrude(tris, 0, 0, 1) as extr,
-                    st_geometryn(extr, 1) as tess;
-                """
-
-            try {
-                query(query1).forEach {
-                    val geom = it.getObject("a") as PGgeometry
-                    println(geom)
-                }
-            } catch (e: Exception) {
-                e.printStackTrace()
-            }
-
             val sql = """
                 SELECT geom, plantas
-                FROM "edificación alturas", ST_GeomFromText('POLYGON((${getAreaString(pos)}))') AS area
+                FROM "edificación alturas", ${getAreaString(pos)} AS area
                 WHERE municipio = '078' AND ST_Within(geom, area);
                       """
 
@@ -123,55 +143,26 @@ object ShapeDAO {
         return Model(vertices, shapes, ShapeType.POLYGONS)
     }
 
-/*
-//    private fun addPolygon(polygon: Polygon, foors: Int, vertices: MutableList<Vector3f>, shapes: MutableList<Shape>) {
-//        val points = polygon.getRing(0).points
-//        val p = eu.printingin3d.javascad.models2d.Polygon(points.map { Coords2d(it.x, it.y) })
-//
-//        val csg = LinearExtrude(p, foors * 3.5, Angle.ZERO).toCSG()
-//        val rings = csg.polygons.map { it.getVertices() }
-//
-//        rings.forEach { ring ->
-//
-//            if (ring.size > 3) {
-//                val vertex = DoubleArray(ring.size * 2)
-//                var index = 0
-//                val offset = vertices.size
-//
-//                ring.forEach {
-//                    vertex[index++] = it.x
-//                    vertex[index++] = it.y
-//                    vertices += Point(it.x, it.y, it.z).toVextor3f()
-//                }
-//
-//                val indices = Earcut.earcut(vertex)
-//
-//                for (j in 0 until indices.size / 3) {
-//                    shapes += Shape(listOf(
-//                            offset + indices[j * 3],
-//                            offset + indices[j * 3 + 1],
-//                            offset + indices[j * 3 + 2]
-//                    ))
-//                }
-//            } else {
-//                val offset = vertices.size
-//                ring.forEach {
-//                    vertices += Point(it.x, it.y, it.z).toVextor3f()
-//                }
-//                shapes += Shape(listOf(
-//                        offset,
-//                        offset + 1,
-//                        offset + 2
-//                ))
-//            }
-//        }
-//    }
-*/
+    fun Defs.Geometry.merge(other: Defs.Geometry): Defs.Geometry {
+        val attrMap = mutableMapOf<String, Defs.BufferAttribute>()
 
-    fun eu.printingin3d.javascad.vrl.Polygon.getVertices(): List<Coords3d> {
-        val field = eu.printingin3d.javascad.vrl.Polygon::class.java.getDeclaredField("vertices")
-        field.isAccessible = true
-        return field.get(this) as List<Coords3d>
+        attributes.forEach {
+            attrMap[it.attributeName] = it
+        }
+
+        other.attributes.forEach {
+            if (it.attributeName in attrMap) {
+                attrMap[it.attributeName] = it.merge(attrMap.getValue(it.attributeName))
+            } else {
+                attrMap[it.attributeName] = it
+            }
+        }
+
+        return Defs.Geometry(attrMap.values.toList())
+    }
+
+    fun Defs.BufferAttribute.merge(other: Defs.BufferAttribute): Defs.BufferAttribute {
+        return Defs.BufferAttribute(attributeName, data + other.data, count)
     }
 
     fun Point.toVextor3f(): Vector3f {

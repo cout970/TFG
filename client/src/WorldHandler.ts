@@ -36,16 +36,16 @@ export class WorldHandler {
         })
 
 
-        for (let x = -5; x < 0; x++) {
-            for (let z = -5; z < 0; z++) {
+        for (let x = -1; x < 0; x++) {
+            for (let z = -1; z < 0; z++) {
 
-                this.get(`/api/buildings/${x}/${z}`)
-                .then(i => MeshFactory.modelToObjects(i))
-                .then(i => i.forEach(it => {
-                    Environment.buildings.add(it)
-                }))
+                this.get(`/api/buildings2/${x}/${z}`)
+                .then(i => {
+                    console.log(i);
+                    return MeshFactory.toMesh(i)
+                })
+                .then(i => Environment.buildings.add(i))
                 .catch(i => console.log(i))
-
             }
         }
 
