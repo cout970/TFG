@@ -1,7 +1,5 @@
 package com.cout970.server.util
 
-import com.cout970.server.rest.TerrainLoader
-
 
 inline fun (() -> Unit).ifFail(func: () -> Unit) {
     try {

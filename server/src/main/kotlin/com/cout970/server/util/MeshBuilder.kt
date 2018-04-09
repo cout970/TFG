@@ -1,10 +1,35 @@
-package com.cout970.server.rest
+package com.cout970.server.util
 
+import com.cout970.server.rest.Chunk
+import com.cout970.server.rest.Defs
+import com.cout970.server.rest.HeightMap
 import org.joml.Vector3f
 import kotlin.math.min
 import kotlin.math.tanh
 
 object MeshBuilder {
+
+    fun buildGeometry(coords: List<Float>): Defs.Geometry {
+        val vertexData = FloatArray(coords.size / 3)
+        val colorData = FloatArray(coords.size / 3)
+        var ptr = 0
+        var ptr2 = 0
+
+        repeat(vertexData.size) {
+            vertexData[ptr++] = coords[(it * 3)]
+            vertexData[ptr++] = coords[(it * 3) + 1]
+            vertexData[ptr++] = coords[(it * 3) + 2]
+
+            colorData[ptr2++] = tanh(coords[(it * 3)]) * 0.5f + 0.5f
+            colorData[ptr2++] = tanh(coords[(it * 3) + 1]) * 0.5f + 0.5f
+            colorData[ptr2++] = tanh(coords[(it * 3) + 2]) * 0.5f + 0.5f
+        }
+
+        return Defs.Geometry(listOf(
+                Defs.BufferAttribute("position", vertexData, 3),
+                Defs.BufferAttribute("color", colorData, 3)
+        ))
+    }
 
     fun buildGeometry(indices: List<Int>, coords: List<Float>): Defs.Geometry {
         val vertexData = FloatArray(indices.size * 3)

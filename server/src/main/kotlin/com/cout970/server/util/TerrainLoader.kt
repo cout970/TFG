@@ -1,5 +1,7 @@
-package com.cout970.server.rest
+package com.cout970.server.util
 
+import com.cout970.server.rest.Chunk
+import com.cout970.server.rest.heightMapOfSize
 import org.geotools.coverage.grid.GridCoverage2D
 import org.geotools.gce.geotiff.GeoTiffReader
 import org.joml.Vector3f

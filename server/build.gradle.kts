@@ -27,14 +27,14 @@ dependencies {
     compile("net.postgis:postgis-jdbc:$postgisVersion")
     compile("org.postgresql:postgresql:$postgresqlVersion")
     compile("com.google.code.gson:gson:$gsonVersion")
+
     compile("org.geotools:gt-shapefile:$geotoolsVersion")
     compile("org.geotools:gt-swing:$geotoolsVersion")
     compile("org.geotools:gt-geotiff:$geotoolsVersion")
     compile("org.geotools:gt-epsg-hsql:$geotoolsVersion")
-    compile("javax.media:jai-core:1.1.3")
+
     compile("org.gdal:gdal:$gdalVersion")
     compile("eu.printingin3d.javascad:javascad:0.9.0.12")
-
 
     testCompile("junit:junit:$junitVersion")
     testCompile("org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion")

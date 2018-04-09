@@ -1,7 +1,9 @@
 package com.cout970.server.rest
 
 import com.cout970.server.ddbb.ShapeDAO
-import com.cout970.server.rest.TerrainLoader.terrainLevel
+import com.cout970.server.util.MeshBuilder
+import com.cout970.server.util.SceneBaker
+import com.cout970.server.util.TerrainLoader.terrainLevel
 import com.google.gson.GsonBuilder
 import org.joml.Vector3f
 import spark.Request
@@ -15,6 +17,7 @@ object Rest {
             .enableComplexMapKeySerialization()
             .create()
 
+    private val globalScene = SceneBaker.bake(createDemoScene())
 
     fun httpServer() {
 
@@ -65,6 +68,11 @@ object Rest {
             // position: -257, 139, 238
             // target:  -259, 116, 242
             get("/api/camera") { gson.toJson(Pair(Vector3f(0f, 800f, 0f), Vector3f(0f, 0f, 0f))) }
+
+            get("/api/scene/:id") {
+                // scene parameter is ignored for now
+                gson.toJson(globalScene)
+            }
         }
     }
 

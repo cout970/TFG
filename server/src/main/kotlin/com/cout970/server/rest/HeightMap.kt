@@ -11,3 +11,11 @@ class HeightMap(val map: FloatArray, val width: Int, val height: Int) {
 }
 
 fun heightMapOfSize(width: Int, height: Int) = HeightMap(FloatArray(width * height), width, height)
+
+data class Chunk(
+        val posX: Float,
+        val posY: Float,
+        val heights: HeightMap,
+        var maxHeight: Float,
+        val scale: Float
+)

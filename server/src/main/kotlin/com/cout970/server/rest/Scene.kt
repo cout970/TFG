@@ -30,7 +30,7 @@ object Defs {
 
     data class Geometry(val attributes: List<BufferAttribute>)
 
-    enum class CameraType { PERSPECTIVE, ORTHOGRAFIC }
+    enum class CameraType { PERSPECTIVE, ORTHOGRAPHIC }
 
     data class ViewPoint(
             val location: Vector3,
@@ -38,6 +38,7 @@ object Defs {
             val camera: CameraType
     )
 
+    // TODO
     data class Ground(
             val resolution: Float,
             val exaggeration: Float,
@@ -91,7 +92,7 @@ object Defs {
                 val projection: GroundProjection
         ) : Shape()
 
-        // TODO
+        // TODO Extrude?
 //        data class Extrude(
 //                val model: Model,
 //                val rotation: Rotation,
@@ -99,6 +100,10 @@ object Defs {
 //                val resolution: Float,
 //                val projection: GroundProjection
 //        ) : Shape()
+
+        data class BakedShape(
+                val model: Model
+        ) : Shape()
     }
 
     data class Rule(

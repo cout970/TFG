@@ -4,7 +4,7 @@ import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import com.cout970.server.ddbb.DDBBManager
 import com.cout970.server.rest.Rest.httpServer
-import com.cout970.server.rest.TerrainLoader
+import com.cout970.server.util.TerrainLoader
 import com.cout970.server.util.ifFail
 import org.slf4j.LoggerFactory
 import java.util.*
