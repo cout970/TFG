@@ -19,6 +19,7 @@ export default class Environment {
     static ground: Group
     static buildings: Group
     static streets: Group
+    static layers: Group
     static axis: Group
 
     static onTick: () => any
@@ -66,10 +67,10 @@ export default class Environment {
             if (event.which == 38 || event.which == 40) {
 
                 let dir = new Vector3()
-                    .copy(this.controls.target)
-                    .sub(this.camera.position)
-                    .normalize()
-                    .multiplyScalar(50)
+                .copy(this.controls.target)
+                .sub(this.camera.position)
+                .normalize()
+                .multiplyScalar(50)
 
                 if (event.which == 38) {
                     // UP ARROW
@@ -86,12 +87,12 @@ export default class Environment {
             } else if (event.which == 65 || event.which == 68 || event.which == 87 || event.which == 83) {
 
                 let dir = new Vector3(1, 0, 0)
-                    .applyAxisAngle(new Vector3(0, 1, 0), this.controls.getAzimuthalAngle())
-                    .multiplyScalar(50)
+                .applyAxisAngle(new Vector3(0, 1, 0), this.controls.getAzimuthalAngle())
+                .multiplyScalar(50)
 
                 let perpendicular = new Vector3()
-                    .copy(dir)
-                    .applyAxisAngle(new Vector3(0, 1, 0), THREE.Math.degToRad(90))
+                .copy(dir)
+                .applyAxisAngle(new Vector3(0, 1, 0), THREE.Math.degToRad(90))
 
                 if (event.which == 65) {
                     // A
@@ -142,12 +143,16 @@ export default class Environment {
         this.streets = new Group()
         this.streets.name = "Streets"
 
+        this.layers = new Group()
+        this.layers.name = "Layers"
+
         this.axis = new Group()
         this.axis.name = "axis"
 
         this.scene.add(this.ground)
         this.scene.add(this.buildings)
         this.scene.add(this.streets)
+        this.scene.add(this.layers)
         this.scene.add(this.axis)
     }
 

@@ -1,12 +1,14 @@
 package com.cout970.server.rest
 
 import com.cout970.server.rest.Defs.Color
+import com.cout970.server.rest.Defs.GroundProjection.DefaultGroundProjection
 import com.cout970.server.rest.Defs.Layer
 import com.cout970.server.rest.Defs.Material
 import com.cout970.server.rest.Defs.Model
 import com.cout970.server.rest.Defs.Rotation
 import com.cout970.server.rest.Defs.Rule
 import com.cout970.server.rest.Defs.Scene
+import com.cout970.server.rest.Defs.Shape.ShapeAtLine
 import com.cout970.server.rest.Defs.Shape.ShapeAtPoint
 import com.cout970.server.rest.Defs.ViewPoint
 import com.cout970.server.util.toGeometry
@@ -20,7 +22,7 @@ fun createDemoScene(): Scene {
     // Geometry generation
     val cubeGeom = Cube.fromCoordinates(
             Coords3d(0.0, 0.0, 0.0),
-            Coords3d(1.0, 1.0, 1.0)
+            Coords3d(10.0, 10.0, 10.0)
     ).toGeometry()
 
     // Model generation
@@ -38,11 +40,22 @@ fun createDemoScene(): Scene {
 
     // Rest of the scene
 
-    val cubeShape = ShapeAtPoint(
+    val cubeShapePoint = ShapeAtPoint(
             model = cubeModel,
-            position = Vector3f(100f, 0f, 0f),
+            position = Vector3f(10f, 0f, 10f),
             rotation = Rotation(0f, Vector3f(0f, 0f, 0f)),
             scale = Vector3(1f)
+    )
+
+    val cubeShapeLine = ShapeAtLine(
+            model = cubeModel,
+            rotation = Rotation(0f, Vector3f(0f, 0f, 0f)),
+            scale = Vector3(1f),
+            lineStart = Vector3f(-10f, 0f, 0f),
+            lineEnd = Vector3f(-10f, 0f, 100f),
+            initialGap = 0f,
+            gap = 25f,
+            projection = DefaultGroundProjection(0f)
     )
 
     val lightsLayer = Layer(
@@ -52,7 +65,12 @@ fun createDemoScene(): Scene {
                     filter = "ignore",
                     minDistance = 0f,
                     maxDistance = 2000f,
-                    shapes = listOf(cubeShape)
+                    shapes = listOf(cubeShapePoint)
+            ), Rule(
+                    filter = "ignore",
+                    minDistance = 0f,
+                    maxDistance = 2000f,
+                    shapes = listOf(cubeShapeLine)
             ))
     )
 

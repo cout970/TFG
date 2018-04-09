@@ -1,9 +1,13 @@
 package com.cout970.server.ddbb
 
-import com.cout970.server.rest.*
+import com.cout970.server.rest.Defs
+import com.cout970.server.rest.Model
+import com.cout970.server.rest.Shape
+import com.cout970.server.rest.ShapeType
 import com.cout970.server.util.MeshBuilder
 import com.cout970.server.util.TerrainLoader
 import com.cout970.server.util.earthToScene
+import com.cout970.server.util.merge
 import org.joml.Vector3f
 import org.postgis.MultiPolygon
 import org.postgis.PGgeometry
@@ -143,28 +147,6 @@ object ShapeDAO {
         }
 
         return Model(vertices, shapes, ShapeType.POLYGONS)
-    }
-
-    fun Defs.Geometry.merge(other: Defs.Geometry): Defs.Geometry {
-        val attrMap = mutableMapOf<String, Defs.BufferAttribute>()
-
-        attributes.forEach {
-            attrMap[it.attributeName] = it
-        }
-
-        other.attributes.forEach {
-            if (it.attributeName in attrMap) {
-                attrMap[it.attributeName] = it.merge(attrMap.getValue(it.attributeName))
-            } else {
-                attrMap[it.attributeName] = it
-            }
-        }
-
-        return Defs.Geometry(attrMap.values.toList())
-    }
-
-    fun Defs.BufferAttribute.merge(other: Defs.BufferAttribute): Defs.BufferAttribute {
-        return Defs.BufferAttribute(attributeName, data + other.data, count)
     }
 
     fun Point.toVextor3f(): Vector3f {

@@ -17,8 +17,6 @@ object Rest {
             .enableComplexMapKeySerialization()
             .create()
 
-    private val globalScene = SceneBaker.bake(createDemoScene())
-
     fun httpServer() {
 
         ignite().apply {
@@ -33,6 +31,7 @@ object Rest {
                 val (x, y) = parseVector2(request)
                 val map = terrainLevel[x to y] ?: return@get "{ \"error\": \"No map\" }"
 
+                System.gc()
                 val geom = MeshBuilder.chunkToModel(map)
                 gson.toJson(geom).apply {
                     System.gc()
@@ -71,7 +70,7 @@ object Rest {
 
             get("/api/scene/:id") {
                 // scene parameter is ignored for now
-                gson.toJson(globalScene)
+                gson.toJson(SceneBaker.bake(createDemoScene()))
             }
         }
     }

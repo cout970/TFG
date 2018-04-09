@@ -17,6 +17,10 @@ object Defs {
             val b: Float
     )
 
+    data class BufferAttribute(val attributeName: String, val data: FloatArray, val count: Int)
+
+    data class Geometry(val attributes: List<BufferAttribute>)
+
     data class Material(
             val ambientIntensity: Float,
             val shininess: Float,
@@ -26,9 +30,7 @@ object Defs {
             val transparency: Float
     )
 
-    data class BufferAttribute(val attributeName: String, val data: FloatArray, val count: Int)
-
-    data class Geometry(val attributes: List<BufferAttribute>)
+    data class Model(val geometry: Geometry, val material: Material)
 
     enum class CameraType { PERSPECTIVE, ORTHOGRAPHIC }
 
@@ -46,14 +48,13 @@ object Defs {
 //            val texture: TODO()
     )
 
-    data class Model(val geometry: Geometry, val material: Material)
-
     sealed class GroundProjection {
 
         data class DefaultGroundProjection(
                 val elevation: Float // relative to the ground
         ) : GroundProjection()
 
+        // I don't remember what this does
         data class HorizontalGroundProjection(
                 val elevation: Float,
                 val fromMax: Boolean // Using the top or the botton to apply the relative height

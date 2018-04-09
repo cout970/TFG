@@ -33,6 +33,7 @@ dependencies {
     compile("org.geotools:gt-geotiff:$geotoolsVersion")
     compile("org.geotools:gt-epsg-hsql:$geotoolsVersion")
 
+    compile("javax.media:jai-core:1.1.3")
     compile("org.gdal:gdal:$gdalVersion")
     compile("eu.printingin3d.javascad:javascad:0.9.0.12")
 
