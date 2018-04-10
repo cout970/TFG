@@ -1,8 +1,10 @@
 package com.cout970.server.rest
 
+import org.joml.Vector2f
 import org.joml.Vector3f
 
 typealias Vector3 = Vector3f
+typealias Vector2 = Vector2f
 
 object Defs {
 
@@ -17,9 +19,19 @@ object Defs {
             val b: Float
     )
 
-    data class BufferAttribute(val attributeName: String, val data: FloatArray, val count: Int)
+    data class Polygon(
+            val points: List<Vector2>
+    )
 
-    data class Geometry(val attributes: List<BufferAttribute>)
+    data class BufferAttribute(
+            val attributeName: String,
+            val data: FloatArray,
+            val count: Int
+    )
+
+    data class Geometry(
+            val attributes: List<BufferAttribute>
+    )
 
     data class Material(
             val ambientIntensity: Float,
@@ -30,7 +42,10 @@ object Defs {
             val transparency: Float
     )
 
-    data class Model(val geometry: Geometry, val material: Material)
+    data class Model(
+            val geometry: Geometry,
+            val material: Material
+    )
 
     enum class CameraType { PERSPECTIVE, ORTHOGRAPHIC }
 
@@ -52,12 +67,6 @@ object Defs {
 
         data class DefaultGroundProjection(
                 val elevation: Float // relative to the ground
-        ) : GroundProjection()
-
-        // I don't remember what this does
-        data class HorizontalGroundProjection(
-                val elevation: Float,
-                val fromMax: Boolean // Using the top or the botton to apply the relative height
         ) : GroundProjection()
 
         data class BridgeGroundProjection(
@@ -86,7 +95,8 @@ object Defs {
         ) : Shape()
 
         data class ShapeAtSurface(
-                val geometry: Model,
+                val model: Model,
+                val surface: Polygon,
                 val rotation: Rotation,
                 val scale: Vector3,
                 val resolution: Float,

@@ -17,12 +17,11 @@ export default class Environment {
     static stats: Stats
 
     static ground: Group
-    static buildings: Group
-    static streets: Group
     static layers: Group
     static axis: Group
 
     static onTick: () => any
+    static guiCallback: () => void;
 
     static init() {
         const body = document.body!!
@@ -137,12 +136,6 @@ export default class Environment {
         this.ground = new Group()
         this.ground.name = "Ground"
 
-        this.buildings = new Group()
-        this.buildings.name = "Buildings"
-
-        this.streets = new Group()
-        this.streets.name = "Streets"
-
         this.layers = new Group()
         this.layers.name = "Layers"
 
@@ -150,8 +143,6 @@ export default class Environment {
         this.axis.name = "axis"
 
         this.scene.add(this.ground)
-        this.scene.add(this.buildings)
-        this.scene.add(this.streets)
         this.scene.add(this.layers)
         this.scene.add(this.axis)
     }

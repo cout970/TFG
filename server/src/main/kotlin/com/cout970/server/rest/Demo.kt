@@ -5,11 +5,11 @@ import com.cout970.server.rest.Defs.GroundProjection.DefaultGroundProjection
 import com.cout970.server.rest.Defs.Layer
 import com.cout970.server.rest.Defs.Material
 import com.cout970.server.rest.Defs.Model
+import com.cout970.server.rest.Defs.Polygon
 import com.cout970.server.rest.Defs.Rotation
 import com.cout970.server.rest.Defs.Rule
 import com.cout970.server.rest.Defs.Scene
-import com.cout970.server.rest.Defs.Shape.ShapeAtLine
-import com.cout970.server.rest.Defs.Shape.ShapeAtPoint
+import com.cout970.server.rest.Defs.Shape.*
 import com.cout970.server.rest.Defs.ViewPoint
 import com.cout970.server.util.toGeometry
 import eu.printingin3d.javascad.coords.Coords3d
@@ -58,6 +58,20 @@ fun createDemoScene(): Scene {
             projection = DefaultGroundProjection(0f)
     )
 
+    val cubeShapeSurface = ShapeAtSurface(
+            model = cubeModel,
+            surface = Polygon(listOf(
+                    Vector2(0f, 0f),
+                    Vector2(1000f, 0f),
+                    Vector2(1000f, 1000f),
+                    Vector2(0f, 1000f)
+            )),
+            rotation = Rotation(0f, Vector3f(0f, 0f, 0f)),
+            scale = Vector3(1f),
+            resolution = 0.001f,
+            projection = DefaultGroundProjection(0f)
+    )
+
     val lightsLayer = Layer(
             name = "Lights",
             description = "This layer show the illumination of an area",
@@ -71,6 +85,11 @@ fun createDemoScene(): Scene {
                     minDistance = 0f,
                     maxDistance = 2000f,
                     shapes = listOf(cubeShapeLine)
+            ), Rule(
+                    filter = "ignore",
+                    minDistance = 0f,
+                    maxDistance = 2000f,
+                    shapes = listOf(cubeShapeSurface)
             ))
     )
 

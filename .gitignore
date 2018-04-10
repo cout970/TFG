@@ -253,5 +253,5 @@ gradle-app.setting
 # # Work around https://youtrack.jetbrains.com/issue/IDEA-116898
 # gradle/wrapper/gradle-wrapper.properties
 
-
+run/GaliciaDTM25m.tif
 # End of https://www.gitignore.io/api/web,java,node,linux,macos,gradle,kotlin,windows,intellij+all,webstorm+all

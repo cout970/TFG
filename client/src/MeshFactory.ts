@@ -44,7 +44,7 @@ export class MeshFactory {
         let material = new MeshPhongMaterial()
 
 
-        // material.wireframe = true
+        material.wireframe = true
         material.vertexColors = VertexColors
 
         geom.attributes.forEach(attr => {

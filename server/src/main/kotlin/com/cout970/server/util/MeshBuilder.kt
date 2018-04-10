@@ -58,7 +58,7 @@ object MeshBuilder {
         val dist = Vector3f(chunk.posX, 0f, chunk.posY).distance(Vector3f(0f))
 
         val scale = when (dist) {
-            in 0f..8666f -> 256
+            in 0f..8666f -> 64
             in 6666f..16666f -> 64
             in 16666f..33333f -> 32
             in 33333f..50000f -> 16
