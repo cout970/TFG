@@ -1,14 +1,13 @@
 package com.cout970.server.rest
 
-import com.cout970.server.ddbb.ShapeDAO
 import com.cout970.server.util.MeshBuilder
-import com.cout970.server.util.SceneBaker
 import com.cout970.server.util.TerrainLoader.terrainLevel
 import com.google.gson.GsonBuilder
-import org.joml.Vector3f
+import com.google.gson.stream.JsonWriter
 import spark.Request
 import spark.kotlin.ignite
 import java.io.File
+import java.io.OutputStreamWriter
 
 object Rest {
 
@@ -27,6 +26,7 @@ object Rest {
                 File("core-js/web/index.html").readText()
             }
 
+            // terrain
             get("/api/height/:x/:y") {
                 val (x, y) = parseVector2(request)
                 val map = terrainLevel[x to y] ?: return@get "{ \"error\": \"No map\" }"
@@ -36,20 +36,6 @@ object Rest {
                 gson.toJson(geom).apply {
                     System.gc()
                 }
-            }
-
-            /// buildings test
-            get("/api/buildings/:x/:y") {
-                gson.toJson(ShapeDAO.getBuildings(parseVector2(request)))
-            }
-
-            get("/api/buildings2/:x/:y") {
-                gson.toJson(ShapeDAO.getBuildingsIn(parseVector2(request)))
-            }
-
-            /// buildings test
-            get("/api/streets/:x/:y") {
-                gson.toJson(ShapeDAO.getStreets(parseVector2(request)))
             }
 
             // web
@@ -64,14 +50,27 @@ object Rest {
                 }
             }
 
-            // position: -257, 139, 238
-            // target:  -259, 116, 242
-            get("/api/camera") { gson.toJson(Pair(Vector3f(0f, 800f, 0f), Vector3f(0f, 0f, 0f))) }
-
+            // scenes
             get("/api/scene/:id") {
-                // scene parameter is ignored for now
-                gson.toJson(SceneBaker.bake(createDemoScene()))
+                val writer = JsonWriter(OutputStreamWriter(this.response.raw().outputStream, "UTF-8"))
+                gson.toJson(scene, Defs.Scene::class.java, writer)
+                writer.close()
+                ""
             }
+
+            //            /// buildings test
+//            get("/api/buildings/:x/:y") {
+//                gson.toJson(ShapeDAO.getBuildings(parseVector2(request)))
+//            }
+//
+//            get("/api/buildings2/:x/:y") {
+//                gson.toJson(ShapeDAO.getBuildingsIn(parseVector2(request)))
+//            }
+//
+//            /// buildings test
+//            get("/api/streets/:x/:y") {
+//                gson.toJson(ShapeDAO.getStreets(parseVector2(request)))
+//            }
         }
     }
 

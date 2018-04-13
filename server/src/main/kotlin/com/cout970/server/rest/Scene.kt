@@ -5,6 +5,13 @@ import org.joml.Vector3f
 
 typealias Vector3 = Vector3f
 typealias Vector2 = Vector2f
+typealias Polygon3d = eu.printingin3d.javascad.vrl.Polygon
+
+data class Triangle2d(
+        val a: Vector2,
+        val b: Vector2,
+        val c: Vector2
+)
 
 object Defs {
 
@@ -100,6 +107,15 @@ object Defs {
                 val rotation: Rotation,
                 val scale: Vector3,
                 val resolution: Float,
+                val projection: GroundProjection
+        ) : Shape()
+
+        data class ExtrudeSurface(
+                val surface: Polygon,
+                val height: Float,
+                val rotation: Rotation,
+                val scale: Vector3,
+                val material: Material,
                 val projection: GroundProjection
         ) : Shape()
 

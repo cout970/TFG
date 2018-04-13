@@ -4,10 +4,13 @@ import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import com.cout970.server.ddbb.DDBBManager
 import com.cout970.server.rest.Rest.httpServer
+import com.cout970.server.rest.bakeScene
+import com.cout970.server.rest.loadBuildings
 import com.cout970.server.util.TerrainLoader
 import com.cout970.server.util.ifFail
 import org.slf4j.LoggerFactory
 import java.util.*
+import kotlin.system.measureTimeMillis
 
 
 fun main(args: Array<String>) {
@@ -26,11 +29,31 @@ fun main(args: Array<String>) {
     println("Done: DDBB connection")
 
     println("Loading height maps")
-    if (!TerrainLoader.loadHeightMaps()) {
-        println("Done: Map loading")
-    } else {
-        println("Exception in Map loading")
+    var error = false
+    var time: Long
+
+    time = measureTimeMillis {
+        error = TerrainLoader.loadHeightMaps()
     }
+    if (error) println("Done: Map loading ($time ms)") else println("Exception in Map loading ($time ms)")
+
+    System.gc()
+
+    println("Loading buildings")
+    time = measureTimeMillis {
+        loadBuildings()
+    }
+    println("Buildings loaded ($time ms)")
+
+    System.gc()
+
+    println("Baking scene")
+    time = measureTimeMillis {
+        bakeScene()
+    }
+    println("Scene baked ($time ms)")
+
+    System.gc()
 
     println("Starting: http server")
     httpServer()

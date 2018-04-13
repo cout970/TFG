@@ -76,9 +76,6 @@ export class WorldHandler {
 
         for (let i = 0; i < 399; i++) {
             let pos = this.spiral(i)
-
-            console.log(`${pos[0]}, ${pos[1]}`)
-
             this.get(`/api/height/${pos[0] - 8}/${pos[1] + 1}`)
             .then(i => MeshFactory.toMeshGeometry(i))
             .then(i => Environment.ground.add(i))

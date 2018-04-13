@@ -10,6 +10,13 @@ import com.cout970.server.rest.Defs.Shape
 import com.cout970.server.rest.Defs.Shape.BakedShape
 import com.cout970.server.rest.Vector2
 import com.cout970.server.rest.Vector3
+import eu.printingin3d.javascad.basic.Angle
+import eu.printingin3d.javascad.coords.Coords3d
+import eu.printingin3d.javascad.coords.Triangle3d
+import eu.printingin3d.javascad.coords2d.Coords2d
+import eu.printingin3d.javascad.models.LinearExtrude
+import eu.printingin3d.javascad.models2d.Polygon
+import eu.printingin3d.javascad.vrl.FacetGenerationContext
 import org.joml.Matrix4f
 import org.joml.Vector4f
 import kotlin.math.sqrt
@@ -19,8 +26,13 @@ object SceneBaker {
     fun bake(scene: Scene): Scene {
         val newLayers = scene.layers.map { layer ->
             val newRules = layer.rules.map { rule ->
-                val newShapes = rule.shapes.map { shape ->
-                    bakeShape(shape)
+                val newShapes = rule.shapes.mapNotNull { shape ->
+                    try {
+                        bakeShape(shape)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        null
+                    }
                 }
                 rule.copy(shapes = newShapes)
             }
@@ -29,11 +41,12 @@ object SceneBaker {
         return scene.copy(layers = newLayers)
     }
 
-    private fun bakeShape(shape: Shape): BakedShape = when (shape) {
+    fun bakeShape(shape: Shape): BakedShape = when (shape) {
         is BakedShape -> shape
         is Shape.ShapeAtPoint -> bakeShapeAtPoint(shape)
         is Shape.ShapeAtLine -> bakeShapeAtLine(shape)
         is Shape.ShapeAtSurface -> bakeShapeAtSurface(shape)
+        is Shape.ExtrudeSurface -> bakeExtrudeShape(shape)
     }
 
     private fun bakeShapeAtPoint(shape: Shape.ShapeAtPoint): BakedShape {
@@ -75,24 +88,12 @@ object SceneBaker {
     }
 
     private fun bakeShapeAtSurface(shape: Shape.ShapeAtSurface): BakedShape {
-        val points = shape.surface.points
-        val data = points
-                .flatMap { listOf(it.x, it.y) }
-                .map { it.toDouble() }
-                .toDoubleArray()
-
-        val indices = Earcut.earcut(data)
         val locations = mutableListOf<Vector2>()
         val geometries = mutableListOf<Geometry>()
 
-        repeat(indices.size / 3) { i ->
-            val ind1 = indices[i * 3]
-            val ind2 = indices[i * 3 + 1]
-            val ind3 = indices[i * 3 + 2]
+        val triangles = Triangulator.triangulate(shape.surface)
 
-            val point1 = points[ind1]
-            val point2 = points[ind2]
-            val point3 = points[ind3]
+        triangles.forEach { (point1, point2, point3) ->
 
             // http://mathworld.wolfram.com/TrianglePointPicking.html
             val v0 = Vector2(0f)
@@ -128,7 +129,41 @@ object SceneBaker {
         return BakedShape(newModel)
     }
 
-    fun project(projection: GroundProjection, point: Vector3): Vector3 {
+    private fun bakeExtrudeShape(shape: Shape.ExtrudeSurface): BakedShape {
+        require(shape.surface.points.size >= 3) {
+            "Polygon must have at least 3 points, it had ${shape.surface.points.size} instead"
+        }
+
+        val coords = shape.surface.points.map { Coords2d(it.x.toDouble(), it.y.toDouble()) }
+        val polygon = Polygon(coords)
+        val model = LinearExtrude(polygon, shape.height.toDouble(), Angle.ZERO, 1.0)
+
+        val polygons = model.toCSG(FacetGenerationContext.DEFAULT).polygons
+
+        val triangles = polygons.flatMap { Triangulator.triangulate(it) }.map { tri ->
+            val (a, b, c) = tri.points
+            Triangle3d(
+                    Coords3d(a.x, a.z, a.y),
+                    Coords3d(b.x, b.z, b.y),
+                    Coords3d(c.x, c.z, c.y)
+            )
+        }
+
+        val point = triangles.flatMap { it.points }.center()
+
+        val yPos = project(shape.projection, Vector3(point.x.toFloat(), 0f, point.z.toFloat())).y
+
+        val newGeometry = triangles.toGeometry().transform(
+                translation = Vector3(0f, yPos, 0f),
+                rotation = shape.rotation,
+                scale = shape.scale
+        )
+
+        val newModel = Model(newGeometry, shape.material)
+        return BakedShape(newModel)
+    }
+
+    private fun project(projection: GroundProjection, point: Vector3): Vector3 {
         val xPos = point.x + TerrainLoader.ORIGIN.x
         val zPos = point.z + TerrainLoader.ORIGIN.z
         val height = TerrainLoader.getHeight(xPos, zPos)
