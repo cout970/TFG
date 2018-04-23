@@ -1,16 +1,5 @@
 import {Color} from "three";
 
-interface Shape {
-    indices: Array<number>
-}
-
-interface Model {
-    vertex: Array<Defs.Vector3>
-    shapes: Array<Shape>
-    type: string
-}
-
-
 // new format
 export namespace Defs {
 
@@ -33,7 +22,7 @@ export namespace Defs {
 
     export interface BufferAttribute {
         attributeName: string
-        data: Array<number>
+        data: ArrayLike<number>
         count: number
     }
 
@@ -65,8 +54,13 @@ export namespace Defs {
         material: Material
     }
 
+    export interface Pair<A, B> {
+        first: A,
+        second: B
+    }
+
     export interface Shape {
-        model: Model
+        models: Array<Pair<Material, Array<string>>>
     }
 
     export interface Rule {

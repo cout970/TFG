@@ -1,13 +1,14 @@
 package com.cout970.server.util
 
+import com.cout970.server.rest.Defs
 import com.cout970.server.rest.Defs.Geometry
 import com.cout970.server.rest.Defs.GroundProjection
 import com.cout970.server.rest.Defs.GroundProjection.DefaultGroundProjection
-import com.cout970.server.rest.Defs.Model
 import com.cout970.server.rest.Defs.Rotation
 import com.cout970.server.rest.Defs.Scene
 import com.cout970.server.rest.Defs.Shape
 import com.cout970.server.rest.Defs.Shape.BakedShape
+import com.cout970.server.rest.Rest
 import com.cout970.server.rest.Vector2
 import com.cout970.server.rest.Vector3
 import eu.printingin3d.javascad.basic.Angle
@@ -19,6 +20,7 @@ import eu.printingin3d.javascad.models2d.Polygon
 import eu.printingin3d.javascad.vrl.FacetGenerationContext
 import org.joml.Matrix4f
 import org.joml.Vector4f
+import java.util.*
 import kotlin.math.sqrt
 
 object SceneBaker {
@@ -57,8 +59,7 @@ object SceneBaker {
                 scale = shape.scale
         )
 
-        val newModel = Model(newGeometry, model.material)
-        return BakedShape(newModel)
+        return saveInCache(newGeometry, model.material)
     }
 
     private fun bakeShapeAtLine(shape: Shape.ShapeAtLine): BakedShape {
@@ -83,8 +84,7 @@ object SceneBaker {
         }
 
         val newGeometry = geometries.reduce { acc, geometry -> acc.merge(geometry) }
-        val newModel = Model(newGeometry, shape.model.material)
-        return BakedShape(newModel)
+        return saveInCache(newGeometry, shape.model.material)
     }
 
     private fun bakeShapeAtSurface(shape: Shape.ShapeAtSurface): BakedShape {
@@ -125,8 +125,7 @@ object SceneBaker {
         }
 
         val newGeometry = geometries.reduce { acc, geometry -> acc.merge(geometry) }
-        val newModel = Model(newGeometry, shape.model.material)
-        return BakedShape(newModel)
+        return saveInCache(newGeometry, shape.model.material)
     }
 
     private fun bakeExtrudeShape(shape: Shape.ExtrudeSurface): BakedShape {
@@ -159,8 +158,7 @@ object SceneBaker {
                 scale = shape.scale
         )
 
-        val newModel = Model(newGeometry, shape.material)
-        return BakedShape(newModel)
+        return saveInCache(newGeometry, shape.material)
     }
 
     private fun project(projection: GroundProjection, point: Vector3): Vector3 {
@@ -219,5 +217,11 @@ object SceneBaker {
         }
 
         return copy(attributes = newAttributes)
+    }
+
+    private fun saveInCache(newGeometry: Geometry, material: Defs.Material): BakedShape {
+        val str = UUID.randomUUID().toString()
+        Rest.cacheMap[str] = newGeometry.attributes.find { it.attributeName == "position" }?.data!!
+        return BakedShape(listOf(material to listOf(str)))
     }
 }

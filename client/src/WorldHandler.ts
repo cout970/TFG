@@ -7,12 +7,40 @@ export class WorldHandler {
 
     static init() {
 
-        window['debug'] = Environment
+        window['debug'] = this
 
-        this.get("/api/scene/0").then(this.loadScene).catch(console.log)
+        this.get("/api/scene/0").then(i => this.loadScene(i)).catch(console.log)
 
         this.loadHeightMap()
         this.createOriginModel()
+    }
+
+    static loadArray(str: string): Promise<Float32Array> {
+        return window.fetch(`/api/binary/${str}`)
+        .then(i => i.arrayBuffer())
+        .then(j => new Float32Array(j))
+    }
+
+    private static loadAllResources(scene: Defs.Scene): Promise<Map<string, Float32Array>> {
+        let promises = []
+
+        scene.layers.forEach(i => {
+            i.rules.forEach(j => {
+                j.shapes.forEach(k => {
+                    k.models.forEach(l => {
+                        l.second.forEach(str => {
+                            promises.push(this.loadArray(str).then(array => [str, array]))
+                        })
+                    })
+                })
+            })
+        })
+
+        return Promise.all(promises).then(array => {
+            let m = new Map<string, Float32Array>()
+            array.forEach(i => m.set(i[0], i[1]))
+            return m
+        })
     }
 
     private static loadScene(scene: Defs.Scene) {
@@ -20,29 +48,37 @@ export class WorldHandler {
         console.log("Loading scene...")
         console.log(scene)
 
-        let groups = scene.layers.map(layer => {
-            let group = new Group()
-            group.userData = layer
-            group.name = layer.name
+        this.loadAllResources(scene).then(map => {
+            console.log("binary data loaded")
+            console.log(map)
 
-            layer.rules.forEach(rule => {
-                rule.shapes.forEach(i => {
-                    group.add(MeshFactory.toMeshModel(i.model))
+
+            let groups = scene.layers.map(layer => {
+                let group = new Group()
+                group.userData = layer
+                group.name = layer.name
+
+                layer.rules.forEach(rule => {
+                    rule.shapes.forEach(i => {
+                        let models = MeshFactory.toMeshModels(map, i.models)
+                        console.log(models)
+                        models.forEach(i => group.add(i))
+                    })
                 })
+
+                return group
             })
+            groups.forEach(group => env.layers.add(group))
 
-            return group
+            let viewpoint = scene.viewPoints[0]
+            let pos = viewpoint.location
+            env.camera.position.set(pos.x, pos.y, pos.z)
+            env.controls.target.set(0, 0, -10) // TODO
+            env.controls.update()
+
+            env.guiCallback()
+            console.log("Scene loaded")
         })
-        groups.forEach(group => env.layers.add(group))
-
-        let viewpoint = scene.viewPoints[0]
-        let pos = viewpoint.location
-        env.camera.position.set(pos.x, pos.y, pos.z)
-        env.controls.target.set(0, 0, -10) // TODO
-        env.controls.update()
-
-        env.guiCallback()
-        console.log("Scene loaded")
     }
 
     private static createOriginModel() {
@@ -69,15 +105,17 @@ export class WorldHandler {
 
     private static loadHeightMap() {
 
-        this.get(`/api/height/-8/1`)
-        .then(i => MeshFactory.toMeshGeometry(i))
+        // this.get(`/api/height/-8/1`)
+        this.get(`/api/height/0/0`)
+        .then(i => MeshFactory.fromTerrain(i))
         .then(i => Environment.ground.add(i))
         .catch(i => console.log(i))
 
-        for (let i = 0; i < 399; i++) {
+        for (let i = 0; i < 2024; i++) { // 399
             let pos = this.spiral(i)
-            this.get(`/api/height/${pos[0] - 8}/${pos[1] + 1}`)
-            .then(i => MeshFactory.toMeshGeometry(i))
+            // this.get(`/api/height/${pos[0] - 8}/${pos[1] + 1}`)
+            this.get(`/api/height/${pos[0]}/${pos[1]}`)
+            .then(i => MeshFactory.fromTerrain(i))
             .then(i => Environment.ground.add(i))
             .catch(i => console.log(i))
         }

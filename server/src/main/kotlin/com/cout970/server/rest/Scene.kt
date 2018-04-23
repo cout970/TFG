@@ -129,7 +129,7 @@ object Defs {
 //        ) : Shape()
 
         data class BakedShape(
-                val model: Model
+                val models: List<Pair<Material, List<String>>>
         ) : Shape()
     }
 

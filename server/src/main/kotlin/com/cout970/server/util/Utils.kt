@@ -3,7 +3,9 @@ package com.cout970.server.util
 import com.cout970.server.rest.Defs
 import com.cout970.server.rest.Defs.Polygon
 import com.cout970.server.rest.Defs.Shape.BakedShape
+import com.cout970.server.rest.Rest
 import eu.printingin3d.javascad.coords.Coords3d
+import java.util.*
 
 
 inline fun (() -> Unit).ifFail(func: () -> Unit) {
@@ -68,7 +70,35 @@ fun List<Coords3d>.center(): Coords3d {
     )
 }
 
+//fun BakedShape.merge(other: BakedShape): BakedShape {
+//    val geometry = this.model.geometry.merge(other.model.geometry)
+//    return BakedShape(Defs.Model(geometry, this.model.material))
+//}
+
 fun BakedShape.merge(other: BakedShape): BakedShape {
-    val geometry = this.model.geometry.merge(other.model.geometry)
-    return BakedShape(Defs.Model(geometry, this.model.material))
+    val map = mutableMapOf<Defs.Material, List<String>>()
+
+    other.models.forEach { map += it.first to it.second }
+
+    models.forEach { (key, list) ->
+        if (key !in map) {
+            map += key to list
+        } else {
+            map[key] = (map[key]!!) + list
+        }
+    }
+
+    val res = map.mapValues {
+        listOf(it.value.reduce { acc, s ->
+            val newStr = UUID.randomUUID().toString()
+
+            val a = Rest.cacheMap.remove(acc)!!
+            val b = Rest.cacheMap.remove(s)!!
+
+            Rest.cacheMap[newStr] = a + b
+            newStr
+        })
+    }.toList()
+
+    return BakedShape(res)
 }

@@ -1,6 +1,7 @@
 package com.cout970.server.util
 
 import com.cout970.server.rest.Chunk
+import com.cout970.server.rest.Rest
 import com.cout970.server.rest.heightMapOfSize
 import org.geotools.coverage.grid.GridCoverage2D
 import org.geotools.gce.geotiff.GeoTiffReader
@@ -13,13 +14,14 @@ import kotlin.math.min
 
 object TerrainLoader {
 
-    val ORIGIN = Vector3f(538973.6319697625f, 0f, 4750077.070013605f)
-    private val envelope = Vector3f()
+    val ORIGIN = Vector3f(535917f, 0f, 4746812f)
+    val MAP_OFFSET = Vector3f(54952.625f, 0f, 112591f)
+    val envelope = Vector3f()
     val terrainLevel = mutableMapOf<Pair<Int, Int>, Chunk>()
     val center = Vector2i()
 
     val CHUNK_PIXELS = 256
-    val PIXEL_SIZE = 25 // meters
+    val PIXEL_SIZE = 25 //25 // meters
 
     fun relativize(coords: List<Double>): List<Float> {
         val result = mutableListOf<Float>()
@@ -57,6 +59,15 @@ object TerrainLoader {
 
         envelope.x = pos.first
         envelope.z = pos.second
+        println(coverage.envelope2D.minX)
+        println(coverage.envelope2D.maxX)
+
+        val sizeX = coverage.envelope2D.maxX - coverage.envelope2D.minX
+        val sizeY = coverage.envelope2D.maxY - coverage.envelope2D.minY
+
+        println("sizeX: $sizeX")
+        println("sizeY: $sizeY")
+
         terrainLevel += rasterize(image, pos, CHUNK_PIXELS, PIXEL_SIZE.toFloat())
     }
 
@@ -80,38 +91,39 @@ object TerrainLoader {
         xRangeIter.toList().parallelStream().map { x ->
             yRangeIter.mapNotNull { y ->
 
-                val start = Vector3f(pos.first + x * pixelsPerChunk * meters, 0f, pos.second + y * pixelsPerChunk * meters)
 
-                if (ORIGIN.distance(start) < 100000f) {
+                val start = Vector3f(pos.first - ORIGIN.x + x * pixelsPerChunk * meters, 0f, pos.second - ORIGIN.z + y * pixelsPerChunk * meters)
 
-                    val a = (ORIGIN.distance(start) / 100000f)
-                    val quality = -Math.log(a + 0.1)
-                    val vertexPerChunk = max(8, min(pixelsPerChunk, nearestPowerOf2((quality * pixelsPerChunk).toInt())))
+//                if (start.length() < 100000f) {
 
-                    val relScale = (pixelsPerChunk / vertexPerChunk)
-                    val heightMap = heightMapOfSize(vertexPerChunk + 1, vertexPerChunk + 1)
+                val a = (ORIGIN.distance(start) / 100000f)
+                val quality = -Math.log(a + 0.1)
+                val vertexPerChunk = max(8, min(pixelsPerChunk, nearestPowerOf2((quality * pixelsPerChunk).toInt())))
 
-                    for (i in 0..vertexPerChunk) {
-                        for (j in 0..vertexPerChunk) {
+                val relScale = (pixelsPerChunk / vertexPerChunk)
+                val heightMap = heightMapOfSize(vertexPerChunk + 1, vertexPerChunk + 1)
 
-                            val absX = x * pixelsPerChunk + i * relScale
-                            val absY = y * pixelsPerChunk + j * relScale
+                for (i in 0..vertexPerChunk) {
+                    for (j in 0..vertexPerChunk) {
 
-                            if (absX in xRange && absY in yRange) {
-                                val pixel = data.getSample(absX, absY, 0)
-                                if (pixel > 0) {
-                                    heightMap[i, j] = pixel.toFloat()
-                                    max = Math.max(max, pixel)
-                                }
+                        val absX = x * pixelsPerChunk + i * relScale
+                        val absY = y * pixelsPerChunk + j * relScale
+
+                        if (absX in xRange && absY in yRange) {
+                            val pixel = data.getSample(absX, absY, 0)
+                            if (pixel > 0) {
+                                heightMap[i, j] = pixel.toFloat()
+                                max = Math.max(max, pixel)
                             }
                         }
                     }
-                    val posX = pos.first + x * pixelsPerChunk * meters - ORIGIN.x
-                    val posY = pos.second + y * pixelsPerChunk * meters - ORIGIN.z
-                    val chunk = Chunk(posX, posY, heightMap, 0f, meters * pixelsPerChunk)
+                }
+                val posX = pos.first + x * pixelsPerChunk * meters
+                val posY = pos.second + y * pixelsPerChunk * meters
+                val chunk = Chunk(posX, posY, heightMap, 0f, meters * pixelsPerChunk)
 
-                    (x + center.x to y + center.y) to chunk
-                } else null
+                (x + center.x to y + center.y) to chunk
+//                } else null
             }
         }.forEach { it.forEach { map += it } }
 
@@ -119,6 +131,23 @@ object TerrainLoader {
 
         println("Chunks in map: ${map.size}")
         return map
+    }
+
+    fun bakeTerrain() {
+        terrainLevel.toList().parallelStream().forEach { (pos, chunk) ->
+            val key = "${pos.first},${pos.second},"
+            val posKey = key + "p"
+            val colorKey = key + "c"
+            val geom = MeshBuilder.chunkToModel(chunk)
+
+            geom.attributes.forEach {
+                when (it.attributeName) {
+                    "position" -> Rest.cacheMap[posKey] = it.data
+                    "color" -> Rest.cacheMap[colorKey] = it.data
+                }
+            }
+            chunk.cache = posKey to colorKey
+        }
     }
 
     private fun nearestPowerOf2(a: Int): Int {

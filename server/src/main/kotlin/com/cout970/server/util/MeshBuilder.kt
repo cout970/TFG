@@ -4,6 +4,7 @@ import com.cout970.server.rest.Chunk
 import com.cout970.server.rest.Defs
 import com.cout970.server.rest.Defs.Geometry
 import com.cout970.server.rest.HeightMap
+import com.cout970.server.util.TerrainLoader.ORIGIN
 import org.joml.Vector3f
 import kotlin.math.min
 import kotlin.math.tanh
@@ -12,23 +13,23 @@ object MeshBuilder {
 
     fun buildGeometry(coords: List<Float>): Geometry {
         val vertexData = FloatArray(coords.size)
-        val colorData = FloatArray(coords.size)
+//        val colorData = FloatArray(coords.size)
         var ptr = 0
-        var ptr2 = 0
+//        var ptr2 = 0
 
         repeat(vertexData.size / 3) {
             vertexData[ptr++] = coords[(it * 3)]
             vertexData[ptr++] = coords[(it * 3) + 1]
             vertexData[ptr++] = coords[(it * 3) + 2]
 
-            colorData[ptr2++] = tanh(coords[(it * 3)]) * 0.5f + 0.5f
-            colorData[ptr2++] = tanh(coords[(it * 3) + 1]) * 0.5f + 0.5f
-            colorData[ptr2++] = tanh(coords[(it * 3) + 2]) * 0.5f + 0.5f
+//            colorData[ptr2++] = tanh(coords[(it * 3)]) * 0.5f + 0.5f
+//            colorData[ptr2++] = tanh(coords[(it * 3) + 1]) * 0.5f + 0.5f
+//            colorData[ptr2++] = tanh(coords[(it * 3) + 2]) * 0.5f + 0.5f
         }
 
         return Geometry(listOf(
-                Defs.BufferAttribute("position", vertexData, 3),
-                Defs.BufferAttribute("color", colorData, 3)
+                Defs.BufferAttribute("position", vertexData, 3)
+//                Defs.BufferAttribute("color", colorData, 3)
         ))
     }
 
@@ -55,20 +56,21 @@ object MeshBuilder {
     }
 
     fun chunkToModel(chunk: Chunk): Geometry {
-        val dist = Vector3f(chunk.posX, 0f, chunk.posY).distance(Vector3f(0f))
+        val dist = Vector3f(chunk.posX, 0f, chunk.posY).distance(ORIGIN)
 
         val scale = when (dist) {
-            in 0f..8666f -> 64
+            in 0f..8666f -> 128
             in 6666f..16666f -> 64
-            in 16666f..33333f -> 32
-            in 33333f..50000f -> 16
-            in 50000f..63333f -> 8
-            in 63333f..80000f -> 4
-            else -> 2
+            in 16666f..33333f -> 64
+            in 33333f..50000f -> 32
+            in 50000f..63333f -> 32 //8
+            in 63333f..80000f -> 16 //4
+            else -> 16 // 2
         }
 
+        //530396.1531120539875701,4741497.4489337503910065 : 548661.3891702779801562,4759106.2870445996522903
         return heightMapToModel(chunk.heights, scale,
-                Vector3f(chunk.posX, 0f, chunk.posY),
+                Vector3f(chunk.posX - ORIGIN.x, 0f, chunk.posY - ORIGIN.z),
                 Vector3f(chunk.scale, 1f, chunk.scale)
         )
     }
@@ -96,7 +98,7 @@ object MeshBuilder {
             vertexData[ptr++] = offset.y + scale.y * height
             vertexData[ptr++] = offset.z + (scale.z * j / iterSize)
 
-            val color = if (height == 0f) blue else Vector3f(low).lerp(high, height / 2000)
+            val color = if (height == 0f) blue else Vector3f(low).lerp(high, (height / 2000) * 2.0f)
             colorData[ptr2++] = color.x
             colorData[ptr2++] = color.y
             colorData[ptr2++] = color.z

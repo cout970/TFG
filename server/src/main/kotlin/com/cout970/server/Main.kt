@@ -3,10 +3,11 @@ package com.cout970.server
 import ch.qos.logback.classic.Level
 import ch.qos.logback.classic.Logger
 import com.cout970.server.ddbb.DDBBManager
+import com.cout970.server.ddbb.ShapeDAO
 import com.cout970.server.rest.Rest.httpServer
 import com.cout970.server.rest.bakeScene
-import com.cout970.server.rest.loadBuildings
 import com.cout970.server.util.TerrainLoader
+import com.cout970.server.util.TerrainLoader.bakeTerrain
 import com.cout970.server.util.ifFail
 import org.slf4j.LoggerFactory
 import java.util.*
@@ -34,6 +35,7 @@ fun main(args: Array<String>) {
 
     time = measureTimeMillis {
         error = TerrainLoader.loadHeightMaps()
+        bakeTerrain()
     }
     if (error) println("Done: Map loading ($time ms)") else println("Exception in Map loading ($time ms)")
 
@@ -41,7 +43,7 @@ fun main(args: Array<String>) {
 
     println("Loading buildings")
     time = measureTimeMillis {
-        loadBuildings()
+        ShapeDAO.loadBuildings()
     }
     println("Buildings loaded ($time ms)")
 

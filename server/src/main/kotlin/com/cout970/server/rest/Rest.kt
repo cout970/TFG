@@ -1,6 +1,5 @@
 package com.cout970.server.rest
 
-import com.cout970.server.util.MeshBuilder
 import com.cout970.server.util.TerrainLoader.terrainLevel
 import com.google.gson.GsonBuilder
 import com.google.gson.stream.JsonWriter
@@ -8,6 +7,10 @@ import spark.Request
 import spark.kotlin.ignite
 import java.io.File
 import java.io.OutputStreamWriter
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
+import java.util.*
+
 
 object Rest {
 
@@ -15,6 +18,8 @@ object Rest {
             .setPrettyPrinting()
             .enableComplexMapKeySerialization()
             .create()
+
+    val cacheMap = Collections.synchronizedMap(mutableMapOf<String, FloatArray>())
 
     fun httpServer() {
 
@@ -31,11 +36,7 @@ object Rest {
                 val (x, y) = parseVector2(request)
                 val map = terrainLevel[x to y] ?: return@get "{ \"error\": \"No map\" }"
 
-                System.gc()
-                val geom = MeshBuilder.chunkToModel(map)
-                gson.toJson(geom).apply {
-                    System.gc()
-                }
+                gson.toJson(map.cache)
             }
 
             // web
@@ -53,8 +54,27 @@ object Rest {
             // scenes
             get("/api/scene/:id") {
                 val writer = JsonWriter(OutputStreamWriter(this.response.raw().outputStream, "UTF-8"))
+                bakeScene()
                 gson.toJson(scene, Defs.Scene::class.java, writer)
                 writer.close()
+                ""
+            }
+
+            get("/api/binary/:id") {
+                val id = request.params("id")
+
+                val array = cacheMap[id] ?: return@get ""
+
+                response.type("application/octet-stream")
+                val bytes = ByteArray(array.size * 4)
+
+                ByteBuffer
+                        .wrap(bytes)
+                        .order(ByteOrder.LITTLE_ENDIAN)
+                        .asFloatBuffer()
+                        .put(array)
+
+                this.response.raw().outputStream.write(bytes)
                 ""
             }
 

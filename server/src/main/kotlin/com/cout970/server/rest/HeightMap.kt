@@ -18,4 +18,6 @@ data class Chunk(
         val heights: HeightMap,
         var maxHeight: Float,
         val scale: Float
-)
+) {
+    lateinit var cache: Pair<String, String>
+}

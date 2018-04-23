@@ -4,7 +4,6 @@ import com.cout970.server.ddbb.DDBBManager.query
 import com.cout970.server.rest.Defs
 import com.cout970.server.rest.Defs.GroundProjection.DefaultGroundProjection
 import com.cout970.server.rest.Defs.Polygon
-import com.cout970.server.rest.Defs.Shape
 import com.cout970.server.rest.Defs.Shape.ExtrudeSurface
 import com.cout970.server.rest.Vector2
 import com.cout970.server.rest.Vector3
@@ -17,10 +16,21 @@ import org.postgis.MultiPolygon
 import org.postgis.PGgeometry
 import java.util.stream.Collectors
 import javax.xml.parsers.DocumentBuilderFactory
+import kotlin.streams.toList
 import org.postgis.Polygon as PGPolygon
 
 
 object ShapeDAO {
+
+    lateinit var buildings: List<ExtrudeSurface>
+
+    fun loadBuildings() {
+        val pairs = (-5..5).flatMap { x -> (-5..5).map { y -> x to y } }
+
+        buildings = pairs.parallelStream()
+                .flatMap { pos -> ShapeDAO.getBuildings(pos).stream() }
+                .toList()
+    }
 
     fun getBuildings(pos: Pair<Int, Int>): List<ExtrudeSurface> {
         var count = 0
@@ -38,15 +48,23 @@ object ShapeDAO {
             val multiPolygon = geom.geometry as MultiPolygon
             count++
 
-            multiPolygon
-                    .polygons
-                    .map { poly -> Pair(poly.toPolygon().relativize(), floors) }
+            multiPolygon.polygons.map { poly -> Pair(poly.toPolygon().relativize(), floors) }
 
         }.flatten()
 
         println("Loaded $count geometries")
 
         return buildings.parallelStream().map { (polygon, floors) ->
+            val c = java.awt.Color.getHSBColor(Math.random().toFloat() * 360f, 0.5f, 1f)
+            val color = Defs.Color(c.red / 255f, c.green / 255f, c.blue / 255f)
+//            val color = when (floors) {
+//                0 -> Defs.Color(1f, 0f, 0f)
+//                1 -> Defs.Color(0.75f, 0f, 0.25f)
+//                2 -> Defs.Color(0.5f, 0f, 0.5f)
+//                3 -> Defs.Color(0.25f, 0f, 0.75f)
+//                else -> Defs.Color(0f, 0f, 1f)
+//            }
+
             ExtrudeSurface(
                     surface = polygon.flip(),
                     height = floors * 3.5f,
@@ -56,9 +74,9 @@ object ShapeDAO {
                     material = Defs.Material(
                             ambientIntensity = 0.5f,
                             shininess = 0f,
-                            diffuseColor = Defs.Color(1f, 0f, 0f),
-                            emissiveColor = Defs.Color(0f, 1f, 0f),
-                            specularColor = Defs.Color(0f, 0f, 1f),
+                            diffuseColor = color,
+                            emissiveColor = Defs.Color(0f, 0f, 0f),
+                            specularColor = Defs.Color(1f, 1f, 1f),
                             transparency = 0f
                     )
             )
@@ -80,7 +98,8 @@ object ShapeDAO {
     }
 
     private fun Polygon.relativize(): Polygon {
-        return Polygon(points.map { Vector2(it.x - TerrainLoader.ORIGIN.x, it.y - TerrainLoader.ORIGIN.z) })
+//        return Polygon(points.map { Vector2(it.x + ORIGIN.x, -it.y + ORIGIN.z) })
+        return Polygon(points.map { Vector2(it.x, it.y) })
     }
 
 //    fun Point.toVextor3f(): Vector3f {
