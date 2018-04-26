@@ -3,7 +3,7 @@ package com.cout970.server.util
 import com.cout970.server.rest.Defs
 import com.cout970.server.rest.Defs.Geometry
 import com.cout970.server.rest.Defs.GroundProjection
-import com.cout970.server.rest.Defs.GroundProjection.DefaultGroundProjection
+import com.cout970.server.rest.Defs.GroundProjection.*
 import com.cout970.server.rest.Defs.Rotation
 import com.cout970.server.rest.Defs.Scene
 import com.cout970.server.rest.Defs.Shape
@@ -43,6 +43,22 @@ object SceneBaker {
         return scene.copy(layers = newLayers)
     }
 
+    fun bakeShapes(shapes: List<Shape>): BakedShape {
+        return shapes.parallelStream()
+                .map {
+                    try {
+                        Optional.of(SceneBaker.bakeShape(it))
+                    } catch (e: Exception) {
+//                      e.printStackTrace()
+                        Optional.empty<BakedShape>()
+                    }
+                }
+                .filter { it.isPresent }
+                .map { it.get() }
+                .reduce { a: BakedShape, b: BakedShape -> a.merge(b) }
+                .get()
+    }
+
     fun bakeShape(shape: Shape): BakedShape = when (shape) {
         is BakedShape -> shape
         is Shape.ShapeAtPoint -> bakeShapeAtPoint(shape)
@@ -53,8 +69,10 @@ object SceneBaker {
 
     private fun bakeShapeAtPoint(shape: Shape.ShapeAtPoint): BakedShape {
         val model = shape.model
+        val projection = project(shape.projection, shape.position)
+
         val newGeometry = model.geometry.transform(
-                translation = shape.position,
+                translation = shape.position + Vector3(0f, projection.y, 0f),
                 rotation = shape.rotation,
                 scale = shape.scale
         )
@@ -169,7 +187,8 @@ object SceneBaker {
         // TODO fix ground projection
         val y = when (projection) {
             is DefaultGroundProjection -> height + projection.elevation
-            else -> height
+            is FlatProjection -> projection.elevation
+            is BridgeGroundProjection -> TODO("")
         }
 
         return Vector3(point.x, y, point.z)

@@ -106,18 +106,27 @@ export class WorldHandler {
     private static loadHeightMap() {
 
         // this.get(`/api/height/-8/1`)
-        this.get(`/api/height/0/0`)
-        .then(i => MeshFactory.fromTerrain(i))
-        .then(i => Environment.ground.add(i))
-        .catch(i => console.log(i))
+        // this.get(`/api/height/0/0`)
+        // .then(i => MeshFactory.fromTerrain(i))
+        // .then(i => Environment.ground.add(i))
+        // .catch(i => console.log(i))
+        //
+        // for (let i = 0; i < 2024; i++) { // 399
+        //     let pos = this.spiral(i)
+        //     // this.get(`/api/height/${pos[0] - 8}/${pos[1] + 1}`)
+        //     this.get(`/api/height/${pos[0]}/${pos[1]}`)
+        //     .then(i => MeshFactory.fromTerrain(i))
+        //     .then(i => Environment.ground.add(i))
+        //     .catch(i => console.log(i))
+        // }
 
-        for (let i = 0; i < 2024; i++) { // 399
-            let pos = this.spiral(i)
-            // this.get(`/api/height/${pos[0] - 8}/${pos[1] + 1}`)
-            this.get(`/api/height/${pos[0]}/${pos[1]}`)
-            .then(i => MeshFactory.fromTerrain(i))
-            .then(i => Environment.ground.add(i))
-            .catch(i => console.log(i))
+        for (let i = -20; i < 20; i++) { // 399
+            for (let j = -20; j < 20; j++) { // 399
+                this.get(`/api/height/${i}/${j}`)
+                .then(i => MeshFactory.fromTerrain(i))
+                .then(i => Environment.ground.add(i))
+                .catch(i => console.log(i))
+            }
         }
     }
 

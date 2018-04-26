@@ -1,6 +1,6 @@
 package com.cout970.server.rest
 
-import com.cout970.server.ddbb.ShapeDAO.buildings
+import com.cout970.server.ddbb.ShapeDAO
 import com.cout970.server.rest.Defs.CameraType.PERSPECTIVE
 import com.cout970.server.rest.Defs.Color
 import com.cout970.server.rest.Defs.GroundProjection.DefaultGroundProjection
@@ -15,7 +15,7 @@ import com.cout970.server.rest.Defs.Shape.*
 import com.cout970.server.rest.Defs.ViewPoint
 import com.cout970.server.util.SceneBaker
 import com.cout970.server.util.TerrainLoader
-import com.cout970.server.util.merge
+import com.cout970.server.util.areaOf
 import com.cout970.server.util.toGeometry
 import eu.printingin3d.javascad.coords.Coords3d
 import eu.printingin3d.javascad.models.Cube
@@ -24,26 +24,22 @@ import org.joml.Vector3f
 lateinit var scene: Scene
 
 
-fun bakeBuildings(): BakedShape {
-    return buildings.mapNotNull {
-        try {
-            SceneBaker.bakeShape(it)
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
-    }.reduce { a: BakedShape, b: BakedShape -> a.merge(b) }
-}
-
 fun bakeScene() {
     println("Baking scene...")
     Rest.cacheMap.clear()
+    println("Baking terrain...")
     TerrainLoader.bakeTerrain()
     scene = SceneBaker.bake(createDemoScene())
     println("Scene baked")
 }
 
 fun createDemoScene(): Scene {
+
+    println("Baking buildings...")
+    val buildings = SceneBaker.bakeShapes(ShapeDAO.buildings)
+    println("Baking streets...")
+    val streets = SceneBaker.bakeShapes(ShapeDAO.streets)
+    println("Building scene...")
 
     // Geometry generation
     val cubeGeom = Cube.fromCoordinates(
@@ -82,7 +78,8 @@ fun createDemoScene(): Scene {
             model = cubeModel,
             position = Vector3f(10f, 0f, 10f),
             rotation = Rotation(0f, Vector3f(0f, 0f, 0f)),
-            scale = Vector3(1f)
+            scale = Vector3(1f),
+            projection = DefaultGroundProjection(0f)
     )
 
     val cubeShapeLine = ShapeAtLine(
@@ -125,14 +122,9 @@ fun createDemoScene(): Scene {
     )
 
     val lightsLayer = Layer(
-            name = "Lights",
+            name = "Debug Lights",
             description = "This layer shows a line of lights",
             rules = listOf(Rule(
-                    filter = "ignore",
-                    minDistance = 0f,
-                    maxDistance = 2000f,
-                    shapes = listOf(cubeShapePoint)
-            ), Rule(
                     filter = "ignore",
                     minDistance = 0f,
                     maxDistance = 2000f,
@@ -141,7 +133,7 @@ fun createDemoScene(): Scene {
     )
 
     val treesLayer = Layer(
-            name = "Tree area",
+            name = "Debug Tree area",
             description = "This layer shows a forest",
             rules = listOf(Rule(
                     filter = "ignore",
@@ -158,7 +150,31 @@ fun createDemoScene(): Scene {
                     filter = "ignore",
                     minDistance = 0f,
                     maxDistance = 2000f,
-                    shapes = listOf(bakeBuildings())
+                    shapes = listOf(buildings)
+            ))
+    )
+
+    val streetsLayer = Layer(
+            name = "Streets",
+            description = "This layer shows the streets of the city",
+            rules = listOf(Rule(
+                    filter = "ignore",
+                    minDistance = 0f,
+                    maxDistance = 2000f,
+                    shapes = listOf(streets)
+            ))
+    )
+
+    val heightDebugLayer = Layer(
+            name = "Debug heights",
+            description = "This layer shows the ground projection over cubes",
+            rules = listOf(Rule(
+                    filter = "ignore",
+                    minDistance = 0f,
+                    maxDistance = 2000f,
+                    shapes = listOf(SceneBaker.bakeShapes(
+                            areaOf(0..100, 0..100).map { cubeShapePoint }.toList()
+                    ))
             ))
     )
 
@@ -172,6 +188,6 @@ fun createDemoScene(): Scene {
             title = "Demo scene",
             abstract = "A demo scene showing the base components of a scene",
             viewPoints = listOf(mainViewPoint),
-            layers = listOf(buildingLayer) // lightsLayer, treesLayer,
+            layers = listOf(buildingLayer, streetsLayer) //, heightDebugLayer, lightsLayer, treesLayer)
     )
 }

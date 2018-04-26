@@ -102,3 +102,7 @@ fun BakedShape.merge(other: BakedShape): BakedShape {
 
     return BakedShape(res)
 }
+
+fun areaOf(rangeX: IntRange, rangeY: IntRange): Sequence<Pair<Int, Int>> {
+    return rangeX.asSequence().flatMap { x -> rangeY.asSequence().map { y -> x to y } }
+}

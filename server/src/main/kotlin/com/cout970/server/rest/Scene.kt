@@ -76,6 +76,10 @@ object Defs {
                 val elevation: Float // relative to the ground
         ) : GroundProjection()
 
+        data class FlatProjection(
+                val elevation: Float // relative to the ground
+        ) : GroundProjection()
+
         data class BridgeGroundProjection(
                 val startElevation: Float,
                 val endElevation: Float
@@ -87,7 +91,8 @@ object Defs {
                 val model: Model,
                 val position: Vector3,
                 val rotation: Rotation,
-                val scale: Vector3
+                val scale: Vector3,
+                val projection: GroundProjection
         ) : Shape()
 
         data class ShapeAtLine(

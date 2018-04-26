@@ -68,9 +68,13 @@ object MeshBuilder {
             else -> 16 // 2
         }
 
+        println("diff: ${TerrainLoader.envelope - TerrainLoader.ORIGIN}")
+        val x = chunk.posX + TerrainLoader.envelope.x - TerrainLoader.ORIGIN.x // - ORIGIN.x
+        val z = chunk.posY + TerrainLoader.envelope.z - TerrainLoader.ORIGIN.z // - ORIGIN.z
+
         //530396.1531120539875701,4741497.4489337503910065 : 548661.3891702779801562,4759106.2870445996522903
         return heightMapToModel(chunk.heights, scale,
-                Vector3f(chunk.posX - ORIGIN.x, 0f, chunk.posY - ORIGIN.z),
+                Vector3f(x, 0f, z),
                 Vector3f(chunk.scale, 1f, chunk.scale)
         )
     }

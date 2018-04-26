@@ -54,7 +54,7 @@ object Rest {
             // scenes
             get("/api/scene/:id") {
                 val writer = JsonWriter(OutputStreamWriter(this.response.raw().outputStream, "UTF-8"))
-                bakeScene()
+//                bakeScene()
                 gson.toJson(scene, Defs.Scene::class.java, writer)
                 writer.close()
                 ""

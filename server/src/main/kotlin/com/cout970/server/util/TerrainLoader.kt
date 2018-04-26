@@ -9,8 +9,6 @@ import org.joml.Vector2i
 import org.joml.Vector3f
 import java.awt.image.RenderedImage
 import java.io.File
-import kotlin.math.max
-import kotlin.math.min
 
 object TerrainLoader {
 
@@ -59,19 +57,11 @@ object TerrainLoader {
 
         envelope.x = pos.first
         envelope.z = pos.second
-        println(coverage.envelope2D.minX)
-        println(coverage.envelope2D.maxX)
-
-        val sizeX = coverage.envelope2D.maxX - coverage.envelope2D.minX
-        val sizeY = coverage.envelope2D.maxY - coverage.envelope2D.minY
-
-        println("sizeX: $sizeX")
-        println("sizeY: $sizeY")
 
         terrainLevel += rasterize(image, pos, CHUNK_PIXELS, PIXEL_SIZE.toFloat())
     }
 
-    fun rasterize(image: RenderedImage, pos: Pair<Float, Float>, pixelsPerChunk: Int, meters: Float)
+    private fun rasterize(image: RenderedImage, pos: Pair<Float, Float>, pixelsPerChunk: Int, meters: Float)
             : Map<Pair<Int, Int>, Chunk> {
 
         val data = image.data
@@ -91,38 +81,39 @@ object TerrainLoader {
         xRangeIter.toList().parallelStream().map { x ->
             yRangeIter.mapNotNull { y ->
 
-
-                val start = Vector3f(pos.first - ORIGIN.x + x * pixelsPerChunk * meters, 0f, pos.second - ORIGIN.z + y * pixelsPerChunk * meters)
+                //- ORIGIN.x - ORIGIN.z
+                val start = Vector3f(pos.first + x * pixelsPerChunk * meters, 0f, pos.second  + y * pixelsPerChunk * meters)
 
 //                if (start.length() < 100000f) {
 
-                val a = (ORIGIN.distance(start) / 100000f)
-                val quality = -Math.log(a + 0.1)
-                val vertexPerChunk = max(8, min(pixelsPerChunk, nearestPowerOf2((quality * pixelsPerChunk).toInt())))
+//                    val a = (start.length() / 100000f)
+//                    val quality = -Math.log(a + 0.1)
+//                    val vertexPerChunk = max(8, min(pixelsPerChunk, nearestPowerOf2((quality * pixelsPerChunk).toInt())))
+                    val vertexPerChunk = 8
 
-                val relScale = (pixelsPerChunk / vertexPerChunk)
-                val heightMap = heightMapOfSize(vertexPerChunk + 1, vertexPerChunk + 1)
+                    val relScale = (pixelsPerChunk / vertexPerChunk)
+                    val heightMap = heightMapOfSize(vertexPerChunk + 1, vertexPerChunk + 1)
 
-                for (i in 0..vertexPerChunk) {
-                    for (j in 0..vertexPerChunk) {
+                    for (i in 0..vertexPerChunk) {
+                        for (j in 0..vertexPerChunk) {
 
-                        val absX = x * pixelsPerChunk + i * relScale
-                        val absY = y * pixelsPerChunk + j * relScale
+                            val absX = x * pixelsPerChunk + i * relScale
+                            val absY = y * pixelsPerChunk + j * relScale
 
-                        if (absX in xRange && absY in yRange) {
-                            val pixel = data.getSample(absX, absY, 0)
-                            if (pixel > 0) {
-                                heightMap[i, j] = pixel.toFloat()
-                                max = Math.max(max, pixel)
+                            if (absX in xRange && absY in yRange) {
+                                val pixel = data.getSample(absX, absY, 0)
+                                if (pixel > 0) {
+                                    heightMap[i, j] = pixel.toFloat()
+                                    max = Math.max(max, pixel)
+                                }
                             }
                         }
                     }
-                }
-                val posX = pos.first + x * pixelsPerChunk * meters
-                val posY = pos.second + y * pixelsPerChunk * meters
-                val chunk = Chunk(posX, posY, heightMap, 0f, meters * pixelsPerChunk)
+                    val posX = x * pixelsPerChunk * meters
+                    val posY = y * pixelsPerChunk * meters
+                    val chunk = Chunk(posX, posY, heightMap, 0f, meters * pixelsPerChunk)
 
-                (x + center.x to y + center.y) to chunk
+                    (x + center.x to y + center.y) to chunk
 //                } else null
             }
         }.forEach { it.forEach { map += it } }

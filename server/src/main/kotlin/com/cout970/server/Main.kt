@@ -43,7 +43,7 @@ fun main(args: Array<String>) {
 
     println("Loading buildings")
     time = measureTimeMillis {
-        ShapeDAO.loadBuildings()
+        ShapeDAO.loadData()
     }
     println("Buildings loaded ($time ms)")
 

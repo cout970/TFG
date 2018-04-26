@@ -46,7 +46,7 @@ object DDBBManager {
     }
 
     fun Connection.query(sql: String): Sequence<ResultSet> = buildSequence {
-        println("Query started: '$sql'")
+//        println("Query started: '$sql'")
         val start = System.currentTimeMillis()
         val statement = createStatement()
         val resultSet = statement.executeQuery(sql)
@@ -54,7 +54,7 @@ object DDBBManager {
             yield(resultSet)
         }
         statement.close()
-        println("Query finished in (${System.currentTimeMillis() - start}ms): '$sql'")
+//        println("Query finished in (${System.currentTimeMillis() - start}ms): '$sql'")
     }
 }
 

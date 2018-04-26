@@ -1,21 +1,16 @@
 package com.cout970.server.ddbb
 
-import com.cout970.server.ddbb.DDBBManager.query
 import com.cout970.server.rest.Defs
 import com.cout970.server.rest.Defs.GroundProjection.DefaultGroundProjection
 import com.cout970.server.rest.Defs.Polygon
 import com.cout970.server.rest.Defs.Shape.ExtrudeSurface
 import com.cout970.server.rest.Vector2
 import com.cout970.server.rest.Vector3
-import com.cout970.server.util.MeshBuilder
 import com.cout970.server.util.TerrainLoader
-import com.cout970.server.util.flip
-import com.cout970.server.util.merge
+import com.cout970.server.util.areaOf
 import org.joml.Vector3f
 import org.postgis.MultiPolygon
 import org.postgis.PGgeometry
-import java.util.stream.Collectors
-import javax.xml.parsers.DocumentBuilderFactory
 import kotlin.streams.toList
 import org.postgis.Polygon as PGPolygon
 
@@ -23,16 +18,21 @@ import org.postgis.Polygon as PGPolygon
 object ShapeDAO {
 
     lateinit var buildings: List<ExtrudeSurface>
+    lateinit var streets: List<ExtrudeSurface>
 
-    fun loadBuildings() {
-        val pairs = (-5..5).flatMap { x -> (-5..5).map { y -> x to y } }
+    fun loadData() {
+        val pairs = areaOf(-5..5, -5..5).toList()
 
         buildings = pairs.parallelStream()
                 .flatMap { pos -> ShapeDAO.getBuildings(pos).stream() }
                 .toList()
+
+        streets = pairs.parallelStream()
+                .flatMap { pos -> ShapeDAO.getStreets(pos).stream() }
+                .toList()
     }
 
-    fun getBuildings(pos: Pair<Int, Int>): List<ExtrudeSurface> {
+    private fun getBuildings(pos: Pair<Int, Int>): List<ExtrudeSurface> {
         var count = 0
         val sql = """
                 SELECT geom, plantas
@@ -46,27 +46,21 @@ object ShapeDAO {
             val floors = it.getInt("plantas")
 
             val multiPolygon = geom.geometry as MultiPolygon
+            val color = randomColor2() //randomColor()
             count++
 
-            multiPolygon.polygons.map { poly -> Pair(poly.toPolygon().relativize(), floors) }
+            multiPolygon.polygons.map { poly ->
+                Triple(poly.toPolygon().relativize(), floors, color)
+            }
 
         }.flatten()
 
         println("Loaded $count geometries")
 
-        return buildings.parallelStream().map { (polygon, floors) ->
-            val c = java.awt.Color.getHSBColor(Math.random().toFloat() * 360f, 0.5f, 1f)
-            val color = Defs.Color(c.red / 255f, c.green / 255f, c.blue / 255f)
-//            val color = when (floors) {
-//                0 -> Defs.Color(1f, 0f, 0f)
-//                1 -> Defs.Color(0.75f, 0f, 0.25f)
-//                2 -> Defs.Color(0.5f, 0f, 0.5f)
-//                3 -> Defs.Color(0.25f, 0f, 0.75f)
-//                else -> Defs.Color(0f, 0f, 1f)
-//            }
+        return buildings.map { (polygon, floors, color) ->
 
             ExtrudeSurface(
-                    surface = polygon.flip(),
+                    surface = polygon,
                     height = floors * 3.5f,
                     rotation = Defs.Rotation(0f, Vector3f(0f, 0f, 0f)),
                     scale = Vector3(1f),
@@ -80,7 +74,52 @@ object ShapeDAO {
                             transparency = 0f
                     )
             )
-        }.collect(Collectors.toList())
+        }
+    }
+
+    private fun getStreets(pos: Pair<Int, Int>): List<ExtrudeSurface> {
+        var count = 0
+        val sql = """
+                SELECT geom, ancho
+                FROM calles, ${getAreaString(pos)} AS area
+                WHERE municipio = '078' AND ST_Within(geom, area);
+                      """
+
+
+        val streets = DDBBManager.load(sql) {
+
+            val geom = it.getObject("geom") as PGgeometry
+
+            val multiPolygon = geom.geometry as MultiPolygon
+            val color = randomColor3() //randomColor()
+            count++
+
+
+            multiPolygon.polygons.map { poly ->
+                Pair(poly.toPolygon().relativize(), color)
+            }
+        }.flatten()
+
+        println("Loaded $count geometries")
+
+        return streets.map { (polygon, color) ->
+
+            ExtrudeSurface(
+                    surface = polygon,
+                    height = 0.01f,
+                    rotation = Defs.Rotation(0f, Vector3f(0f, 0f, 0f)),
+                    scale = Vector3(1f),
+                    projection = DefaultGroundProjection(0f),
+                    material = Defs.Material(
+                            ambientIntensity = 0.5f,
+                            shininess = 0f,
+                            diffuseColor = color,
+                            emissiveColor = Defs.Color(0f, 0f, 0f),
+                            specularColor = Defs.Color(1f, 1f, 1f),
+                            transparency = 0f
+                    )
+            )
+        }
     }
 
     private fun getAreaString(pos: Pair<Int, Int>): String {
@@ -98,101 +137,66 @@ object ShapeDAO {
     }
 
     private fun Polygon.relativize(): Polygon {
-//        return Polygon(points.map { Vector2(it.x + ORIGIN.x, -it.y + ORIGIN.z) })
-        return Polygon(points.map { Vector2(it.x, it.y) })
+        // .flip()
+        return Polygon(points.map { Vector2(it.x - TerrainLoader.ORIGIN.x, -(it.y - TerrainLoader.ORIGIN.z)) })
+//        return Polygon(points.map { Vector2(it.x, it.y) })
     }
 
-//    fun Point.toVextor3f(): Vector3f {
-//        val scale = 1
-//        val hScale = 1
-//
-//        val (i, j) = earthToScene(x.toFloat() to y.toFloat())
-//
-//        return Vector3f(
-//                scale * -i,
-//                hScale * z.toFloat(),
-//                scale * j
-//        )
-//    }
-//
-//    fun getStreets(pos: Pair<Int, Int>): Model {
-//
-//        val vertices = mutableListOf<Vector3f>()
-//        val shapes = mutableListOf<Shape>()
+    private fun randomColor(): Defs.Color {
+        val c = java.awt.Color.getHSBColor(Math.random().toFloat() * 360f, 0.5f, 1f)
+        return Defs.Color(c.red / 255f, c.green / 255f, c.blue / 255f)
+    }
+
+    private fun randomColor2(): Defs.Color {
+        // 273.1f chosen by fair dice!
+        val c = java.awt.Color.getHSBColor(273.1f / 360f, 0.5f, 1f)
+        return Defs.Color(c.red / 255f, c.green / 255f, c.blue / 255f)
+    }
+
+    private fun randomColor3(): Defs.Color {
+        val c = java.awt.Color.getHSBColor(63.1f / 360f, 0.5f, 1f)
+        return Defs.Color(c.red / 255f, c.green / 255f, c.blue / 255f)
+    }
+
+//    fun getBuildingsIn(pos: Pair<Int, Int>): Defs.Geometry {
+//        val models: MutableList<Defs.Geometry> = mutableListOf()
+//        var size = 0
 //
 //        DDBBManager.useConnection {
 //
-//            val sql = """
-//                SELECT geom, ancho
-//                FROM calles, ${getAreaString(pos)} AS area
-//                WHERE municipio = '078' AND ST_Within(geom, area);
-//                      """
+//            val query1 = """
+//                SELECT ST_AsX3D(result) as x3d
+//                FROM (SELECT geom
+//                      FROM "edificación alturas", ${getAreaString(pos)} AS area
+//                      WHERE ST_Within(geom, area)) as building,
+//                     st_tesselate(building.geom) as triangleMesh,
+//                     st_extrude(triangleMesh, 0, 0, 0) as extruded,
+//                     st_geometryn(extruded, 1) as result;
+//                """
 //
-//            var count = 0
+//            query(query1).forEach {
+//                val documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
+//                val document = documentBuilder.parse(it.getAsciiStream("x3d"))
 //
-//            query(sql).onEach { count++ }.forEach {
-//                val geom = it.getObject("geom") as PGgeometry
-//                val ancho = it.getInt("ancho")
-//                val geometry = geom.geometry
+//                val indexedFaceSet = document.childNodes.item(0)
+//                val coordinates = indexedFaceSet.childNodes.item(0)
 //
-//                val multiPolygon = geom.geometry as MultiPolygon
+//                val indicesStr = indexedFaceSet.attributes.getNamedItem("coordIndex").nodeValue
+//                val posStr = coordinates.attributes.getNamedItem("point").nodeValue
 //
-//                multiPolygon.polygons.forEach loop@{ polygon ->
-//                    (0 until polygon.numRings())
-//                            .map { polygon.getRing(it) }
-//                            .forEach { ring ->
-//                                val points = ring.points.map { it.toVextor3f() }
+//                val indices = indicesStr.split(' ').filter { it != "-1" }.map { it.toInt() }
+//                val coords = posStr.split(' ').map { it.toDouble() }
 //
-//                                shapes.add(Shape((vertices.size until vertices.size + points.size).toList()))
-//                                vertices.addAll(points)
-//                            }
-//                }
+//                models += MeshBuilder.buildGeometry(indices, TerrainLoader.relativize(coords))
+//                size++
 //            }
-//            System.gc()
 //        }
 //
-//        return Defs.Model(vertices, shapes, ShapeType.POLYGONS)
+//        val start = System.currentTimeMillis()
+//
+//        val result = models.fold(Defs.Geometry(emptyList())) { a, b -> a.merge(b) }
+//
+//        println("All models ($size) merged in ${System.currentTimeMillis() - start} ms")
+//        return result
 //    }
-
-    fun getBuildingsIn(pos: Pair<Int, Int>): Defs.Geometry {
-        val models: MutableList<Defs.Geometry> = mutableListOf()
-        var size = 0
-
-        DDBBManager.useConnection {
-
-            val query1 = """
-                SELECT ST_AsX3D(result) as x3d
-                FROM (SELECT geom
-                      FROM "edificación alturas", ${getAreaString(pos)} AS area
-                      WHERE ST_Within(geom, area)) as building,
-                     st_tesselate(building.geom) as triangleMesh,
-                     st_extrude(triangleMesh, 0, 0, 0) as extruded,
-                     st_geometryn(extruded, 1) as result;
-                """
-
-            query(query1).forEach {
-                val documentBuilder = DocumentBuilderFactory.newInstance().newDocumentBuilder()
-                val document = documentBuilder.parse(it.getAsciiStream("x3d"))
-
-                val indexedFaceSet = document.childNodes.item(0)
-                val coordinates = indexedFaceSet.childNodes.item(0)
-
-                val indicesStr = indexedFaceSet.attributes.getNamedItem("coordIndex").nodeValue
-                val posStr = coordinates.attributes.getNamedItem("point").nodeValue
-
-                val indices = indicesStr.split(' ').filter { it != "-1" }.map { it.toInt() }
-                val coords = posStr.split(' ').map { it.toDouble() }
-
-                models += MeshBuilder.buildGeometry(indices, TerrainLoader.relativize(coords))
-                size++
-            }
-        }
-
-        val start = System.currentTimeMillis()
-
-        val result = models.fold(Defs.Geometry(emptyList())) { a, b -> a.merge(b) }
-
-        println("All models ($size) merged in ${System.currentTimeMillis() - start} ms")
-        return result
-    }
 }
