@@ -11,7 +11,6 @@ import java.awt.image.Raster
 import java.awt.image.RenderedImage
 import java.io.File
 import kotlin.math.max
-import kotlin.math.min
 
 object TerrainLoader {
 
@@ -43,12 +42,27 @@ object TerrainLoader {
         val scale = CHUNK_PIXELS * PIXEL_SIZE
         val absX = x - envelope.x
         val absY = y - envelope.z
+
         val pos = absX.toInt() / scale to absY.toInt() / scale
         val key = pos.first + center.x to pos.second + center.y
         val chunk: Chunk = terrainLevel[key] ?: return 0f
-        val gridX = (chunk.heights.width * (absX - pos.first * scale) / scale).toInt()
-        val gridY = (chunk.heights.height * (absY - pos.second * scale) / scale).toInt()
-        return chunk.heights[gridX, gridY]
+
+        val gridXf = chunk.heights.width * (absX - pos.first * scale) / scale
+        val gridYf = chunk.heights.height * (absY - pos.second * scale) / scale
+
+        val gridX = gridXf.toInt()
+        val gridY = gridYf.toInt()
+
+        val base = chunk.heights[gridX, gridY]
+        val nextX = chunk.heights.getOrNull(gridX + 1, gridY) ?: base
+        val nextY = chunk.heights.getOrNull(gridX, gridY + 1) ?: base
+
+        return interpolate(interpolate(base, nextX, gridXf - gridX), interpolate(base, nextY, gridYf - gridY), 0.5f)
+    }
+
+    private fun interpolate(a: Float, b: Float, c: Float): Float {
+        val mu2 = (1f - Math.cos(c * Math.PI).toFloat()) / 2f
+        return (a * (1f - mu2)) + (b * mu2)
     }
 
     private fun loadLevel1Map() {
@@ -76,8 +90,8 @@ object TerrainLoader {
         var globalMax = 0
         val sizeX = Math.ceil(image.width / pixelsPerChunk.toDouble()).toInt()
         val sizeY = Math.ceil(image.height / pixelsPerChunk.toDouble()).toInt()
-        val xRangeIter = 0..sizeX
-        val yRangeIter = 0..sizeY
+        val xRangeIter = 8..10
+        val yRangeIter = 17..19
 
         center.set(-sizeX / 2, -sizeY / 2)
 
@@ -103,13 +117,14 @@ object TerrainLoader {
         val posX = x * scale
         val posY = y * scale
 
-        val start = Vector3f((envelope.x - ORIGIN.x) + posX, 0f, (envelope.z - ORIGIN.z) + posY)
-
-        if (start.length() > 100000f) return null
-
-        val dist = (start.length() / 100000f)
-        val quality = -Math.log(dist + 0.1)
-        val vertexPerChunk = max(8, min(CHUNK_PIXELS, nearestPowerOf2((quality * CHUNK_PIXELS).toInt())))
+//        val start = Vector3f((envelope.x - ORIGIN.x) + posX, 0f, (envelope.z - ORIGIN.z) + posY)
+//
+//        if (start.length() > 100000f) return null
+//
+//        val dist = (start.length() / 100000f)
+//        val quality = -Math.log(dist + 0.1)
+//        val vertexPerChunk = max(8, min(CHUNK_PIXELS, nearestPowerOf2((quality * CHUNK_PIXELS).toInt())))
+        val vertexPerChunk = CHUNK_PIXELS
 
         val relScale = (CHUNK_PIXELS / vertexPerChunk)
         val heightMap = heightMapOfSize(vertexPerChunk + 1, vertexPerChunk + 1)

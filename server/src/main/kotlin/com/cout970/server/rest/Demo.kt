@@ -43,11 +43,15 @@ fun createDemoScene(): Scene {
     val streets = SceneBaker.bakeShapes(ShapeDAO.streets)
     println("Baking lights...")
     val lights = SceneBaker.bakeShapes(ShapeDAO.lightPoints)
+    println("Baking lights...")
+    val schools = SceneBaker.bakeShapes(ShapeDAO.schools)
+    println("Baking lights...")
+    val parks = SceneBaker.bakeShapes(ShapeDAO.parks)
     println("Building scene...")
 
     // Geometry generation
-    val s = 40.0
-    val triangles = areaOf(-50..50, -50..50).toList().flatMap { (x, y) ->
+    val s = 25.0
+    val triangles = areaOf(-80..80, -80..80).toList().flatMap { (x, y) ->
         listOf(
                 Triangle3d(Coords3d((x + 1) * s, 0.0, (y + 1) * s), Coords3d((x + 1) * s, 0.0, y * s), Coords3d(x * s, 0.0, y * s)),
                 Triangle3d(Coords3d(x * s, 0.0, (y + 1) * s), Coords3d((x + 1) * s, 0.0, (y + 1) * s), Coords3d(x * s, 0.0, y * s))
@@ -189,6 +193,28 @@ fun createDemoScene(): Scene {
             ))
     )
 
+    val schoolsLayer = Layer(
+            name = "Schools and colleges",
+            description = "Shows extra buildings",
+            rules = listOf(Rule(
+                    filter = "ignore",
+                    minDistance = 0f,
+                    maxDistance = 2000f,
+                    shapes = listOf(schools)
+            ))
+    )
+
+    val parksLayer = Layer(
+            name = "Parks",
+            description = "Shows parks of the city",
+            rules = listOf(Rule(
+                    filter = "ignore",
+                    minDistance = 0f,
+                    maxDistance = 2000f,
+                    shapes = listOf(parks)
+            ))
+    )
+
     val mainViewPoint = ViewPoint(
             location = Vector3f(0f, 800f, 0f),
             orientation = Rotation(0f, Vector3f(0f, 0f, 0f)),
@@ -199,6 +225,6 @@ fun createDemoScene(): Scene {
             title = "Demo scene",
             abstract = "A demo scene showing the base components of a scene",
             viewPoints = listOf(mainViewPoint),
-            layers = listOf(streetsLayer, lightsLayer, heightDebugLayer) //, heightDebugLayer, buildingsLayer, treesLayer)
+            layers = listOf(streetsLayer, lightsLayer, heightDebugLayer, buildingLayer, schoolsLayer, parksLayer) //, heightDebugLayer, buildingsLayer, treesLayer)
     )
 }

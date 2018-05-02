@@ -3,8 +3,7 @@ package com.cout970.server.ddbb
 import com.cout970.server.rest.Defs
 import com.cout970.server.rest.Defs.GroundProjection.DefaultGroundProjection
 import com.cout970.server.rest.Defs.Polygon
-import com.cout970.server.rest.Defs.Shape.ExtrudeSurface
-import com.cout970.server.rest.Defs.Shape.ShapeAtPoint
+import com.cout970.server.rest.Defs.Shape.*
 import com.cout970.server.rest.Vector2
 import com.cout970.server.rest.Vector3
 import com.cout970.server.util.TerrainLoader
@@ -12,6 +11,7 @@ import com.cout970.server.util.TerrainLoader.ORIGIN
 import com.cout970.server.util.areaOf
 import com.cout970.server.util.toGeometry
 import eu.printingin3d.javascad.coords.Coords3d
+import eu.printingin3d.javascad.coords.Dims3d
 import eu.printingin3d.javascad.models.Cube
 import org.joml.Vector3f
 import org.postgis.MultiPolygon
@@ -25,10 +25,12 @@ object ShapeDAO {
 
     lateinit var buildings: List<ExtrudeSurface>
     lateinit var streets: List<ExtrudeSurface>
+    lateinit var schools: List<ExtrudeSurface>
+    lateinit var parks: List<ShapeAtSurface>
     lateinit var lightPoints: List<ShapeAtPoint>
 
     fun loadData() {
-        val pairs = areaOf(-5..5, -5..5).toList()
+        val pairs = areaOf(0..0, 0..0).toList()
 
         buildings = pairs.parallelStream()
                 .flatMap { pos -> ShapeDAO.getBuildings(pos).stream() }
@@ -40,6 +42,14 @@ object ShapeDAO {
 
         lightPoints = pairs.parallelStream()
                 .flatMap { pos -> ShapeDAO.getLightPoints(pos).stream() }
+                .toList()
+
+        schools = pairs.parallelStream()
+                .flatMap { pos -> ShapeDAO.getSchools(pos).stream() }
+                .toList()
+
+        parks = pairs.parallelStream()
+                .flatMap { pos -> ShapeDAO.getParks(pos).stream() }
                 .toList()
     }
 
@@ -88,6 +98,97 @@ object ShapeDAO {
         }
     }
 
+    private fun getSchools(pos: Pair<Int, Int>): List<ExtrudeSurface> {
+        var count = 0
+        val sql = """
+                SELECT geom
+                FROM "centros de enseñanza (polígono)", ${getAreaString(pos)} AS area
+                WHERE ST_Within(geom, area);
+                      """
+
+        val buildings = DDBBManager.load(sql) {
+
+            val geom = it.getObject("geom") as PGgeometry
+
+            val multiPolygon = geom.geometry as MultiPolygon
+            val color = randomColor4() //randomColor()
+            count++
+
+            multiPolygon.polygons.map { poly ->
+                Triple(poly.toPolygon().relativize(), 3, color)
+            }
+
+        }.flatten()
+
+        println("Loaded $count geometries")
+
+        return buildings.map { (polygon, floors, color) ->
+
+            ExtrudeSurface(
+                    surface = polygon,
+                    height = 1f,
+                    rotation = Defs.Rotation(0f, Vector3f(0f, 0f, 0f)),
+                    scale = Vector3(1f),
+                    projection = DefaultGroundProjection(0f),
+                    material = Defs.Material(
+                            ambientIntensity = 0.5f,
+                            shininess = 0f,
+                            diffuseColor = color,
+                            emissiveColor = Defs.Color(0f, 0f, 0f),
+                            specularColor = Defs.Color(1f, 1f, 1f),
+                            transparency = 0f
+                    )
+            )
+        }
+    }
+
+    private fun getParks(pos: Pair<Int, Int>): List<ShapeAtSurface> {
+        var count = 0
+        val sql = """
+                SELECT geom
+                FROM "parques (polígono)", ${getAreaString(pos)} AS area
+                WHERE ST_Within(geom, area);
+                      """
+
+        val buildings = DDBBManager.load(sql) {
+
+            val geom = it.getObject("geom") as PGgeometry
+
+            val multiPolygon = geom.geometry as MultiPolygon
+            count++
+
+            multiPolygon.polygons.map { poly ->
+                poly.toPolygon().relativize()
+            }
+
+        }.flatten()
+
+        println("Loaded $count geometries")
+
+        val geom = Cube(Dims3d(1.0, 10.0, 1.0)).toGeometry()
+        val mat = Defs.Material(
+                ambientIntensity = 0.5f,
+                shininess = 0f,
+                diffuseColor = Defs.Color(0f, 0.5f, 0f),
+                emissiveColor = Defs.Color(0f, 0f, 0f),
+                specularColor = Defs.Color(1f, 1f, 1f),
+                transparency = 0f
+        )
+        val treeModel = Defs.Model(geom, mat)
+
+        return buildings.map { polygon ->
+
+            ShapeAtSurface(
+                    model = treeModel,
+                    surface = polygon,
+                    rotation = Defs.Rotation(0f, Vector3f(0f, 0f, 0f)),
+                    scale = Vector3(1f),
+                    projection = DefaultGroundProjection(0f),
+                    resolution = 0.01f
+            )
+        }
+    }
+
     private fun getStreets(pos: Pair<Int, Int>): List<ExtrudeSurface> {
         var count = 0
         val sql = """
@@ -96,7 +197,6 @@ object ShapeDAO {
                 WHERE municipio = '078' AND ST_Within(geom, area);
                       """
 
-
         val streets = DDBBManager.load(sql) {
 
             val geom = it.getObject("geom") as PGgeometry
@@ -104,7 +204,6 @@ object ShapeDAO {
             val multiPolygon = geom.geometry as MultiPolygon
             val color = randomColor3() //randomColor()
             count++
-
 
             multiPolygon.polygons.map { poly ->
                 Pair(poly.toPolygon().relativize(), color)
@@ -117,10 +216,10 @@ object ShapeDAO {
 
             ExtrudeSurface(
                     surface = polygon,
-                    height = 0.01f,
+                    height = 0.5f,
                     rotation = Defs.Rotation(0f, Vector3f(0f, 0f, 0f)),
                     scale = Vector3(1f),
-                    projection = DefaultGroundProjection(0f),
+                    projection = DefaultGroundProjection(1f),
                     material = Defs.Material(
                             ambientIntensity = 0.5f,
                             shininess = 0f,
@@ -185,10 +284,10 @@ object ShapeDAO {
     }
 
     private fun getAreaString(pos: Pair<Int, Int>): String {
-        val minX = TerrainLoader.ORIGIN.x + pos.first * 1000
-        val minY = TerrainLoader.ORIGIN.z + pos.second * 1000
-        val maxX = TerrainLoader.ORIGIN.x + pos.first * 1000 + 1000
-        val maxY = TerrainLoader.ORIGIN.z + pos.second * 1000 + 1000
+        val minX = TerrainLoader.ORIGIN.x + (-2) * 1000
+        val minY = TerrainLoader.ORIGIN.z + (-2) * 1000
+        val maxX = TerrainLoader.ORIGIN.x + (2) * 1000
+        val maxY = TerrainLoader.ORIGIN.z + (2) * 1000
 
         return "ST_GeomFromText('POLYGON(($minX $minY,$minX $maxY,$maxX $maxY,$maxX $minY,$minX $minY))')"
     }
@@ -217,6 +316,11 @@ object ShapeDAO {
 
     private fun randomColor3(): Defs.Color {
         val c = java.awt.Color.getHSBColor(63.1f / 360f, 0.5f, 1f)
+        return Defs.Color(c.red / 255f, c.green / 255f, c.blue / 255f)
+    }
+
+    private fun randomColor4(): Defs.Color {
+        val c = java.awt.Color.getHSBColor(240.1f / 360f, 0.5f, 1f)
         return Defs.Color(c.red / 255f, c.green / 255f, c.blue / 255f)
     }
 

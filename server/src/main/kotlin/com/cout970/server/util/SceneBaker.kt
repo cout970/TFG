@@ -1,5 +1,6 @@
 package com.cout970.server.util
 
+import com.cout970.modeler.util.collections.FloatArrayList
 import com.cout970.server.rest.Defs
 import com.cout970.server.rest.Defs.Geometry
 import com.cout970.server.rest.Defs.GroundProjection
@@ -151,16 +152,18 @@ object SceneBaker {
 
         val coords = shape.surface.points.map { Coords2d(it.x.toDouble(), it.y.toDouble()) }
         val polygon = Polygon(coords)
-        val model = LinearExtrude(polygon, shape.height.toDouble(), Angle.ZERO, 1.0)
+        val height = shape.height.toDouble()
+        val model = LinearExtrude(polygon, height, Angle.ZERO, 1.0)
 
         val polygons = model.toCSG(FacetGenerationContext.DEFAULT).polygons
 
+        val yOffset = height / 2
         val triangles = polygons.flatMap { Triangulator.triangulate(it) }.map { tri ->
             val (a, b, c) = tri.points
             Triangle3d(
-                    Coords3d(a.x, a.z, a.y),
-                    Coords3d(b.x, b.z, b.y),
-                    Coords3d(c.x, c.z, c.y)
+                    Coords3d(a.x, a.z + yOffset, a.y),
+                    Coords3d(b.x, b.z + yOffset, b.y),
+                    Coords3d(c.x, c.z + yOffset, c.y)
             )
         }
 
@@ -211,14 +214,16 @@ object SceneBaker {
         val newAttributes = attributes.map { attr ->
             if (attr.attributeName != "position") return@map attr
 
-            val newData = FloatArray(attr.data.size)
+            val data = expandTriangles(attr.data)
+
+            val newData = FloatArray(data.size)
             val input = Vector4f(0f, 0f, 0f, 1f)
             val output = Vector4f(0f, 0f, 0f, 1f)
 
-            repeat(attr.data.size / 3) { i ->
-                input.x = attr.data[i * 3]
-                input.y = attr.data[i * 3 + 1]
-                input.z = attr.data[i * 3 + 2]
+            repeat(data.size / 3) { i ->
+                input.x = data[i * 3]
+                input.y = data[i * 3 + 1]
+                input.z = data[i * 3 + 2]
 
                 matrix.transform(input, output)
 
@@ -239,5 +244,69 @@ object SceneBaker {
         val str = UUID.randomUUID().toString()
         Rest.cacheMap[str] = newGeometry.attributes.find { it.attributeName == "position" }?.data!!
         return BakedShape(listOf(material to listOf(str)))
+    }
+
+    private fun expandTriangles(data: FloatArray): FloatArray {
+        val list = FloatArrayList()
+        val p0 = Vector3()
+        val p1 = Vector3()
+        val p2 = Vector3()
+
+        repeat(data.size / 9) { i ->
+            p0.x = data[i * 9]
+            p0.y = data[i * 9 + 1]
+            p0.z = data[i * 9 + 2]
+
+            p1.x = data[i * 9 + 3]
+            p1.y = data[i * 9 + 4]
+            p1.z = data[i * 9 + 5]
+
+            p2.x = data[i * 9 + 6]
+            p2.y = data[i * 9 + 7]
+            p2.z = data[i * 9 + 8]
+
+            val p10 = p0 - p1
+            val p20 = p0 - p2
+            val p21 = p1 - p2
+
+            if (p10.length() > 50 || p20.length() > 50 || p21.length() > 50) {
+
+                val a = p10 * 0.5f + p1
+                val b = p20 * 0.5f + p2
+                val c = p21 * 0.5f + p2
+
+                // left-down
+                list.add(p0)
+                list.add(a)
+                list.add(b)
+
+                //center
+                list.add(a)
+                list.add(c)
+                list.add(b)
+
+                // right-down
+                list.add(b)
+                list.add(c)
+                list.add(p2)
+
+                // top
+                list.add(a)
+                list.add(p1)
+                list.add(c)
+
+            } else {
+                list.add(p0)
+                list.add(p1)
+                list.add(p2)
+            }
+        }
+        return list.toFloatArray()
+    }
+
+    private fun FloatArrayList.add(i: Vector3) {
+        add(i.x)
+        add(i.y)
+        add(i.z)
     }
 }

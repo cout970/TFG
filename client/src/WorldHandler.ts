@@ -11,7 +11,7 @@ export class WorldHandler {
 
         this.get("/api/scene/0").then(i => this.loadScene(i)).catch(console.log)
 
-        // this.loadHeightMap()
+        this.loadHeightMap()
         this.createOriginModel()
     }
 
