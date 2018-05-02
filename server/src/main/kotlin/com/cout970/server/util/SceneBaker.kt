@@ -175,8 +175,8 @@ object SceneBaker {
     }
 
     private fun project(projection: GroundProjection, point: Vector3): Vector3 {
-        val xPos = point.x - (TerrainLoader.envelope.x - TerrainLoader.ORIGIN.x)
-        val zPos = point.z - (TerrainLoader.envelope.z - TerrainLoader.ORIGIN.z)
+        val xPos = point.x + TerrainLoader.ORIGIN.x
+        val zPos = point.z + TerrainLoader.ORIGIN.z
         val height = TerrainLoader.getHeight(xPos, zPos)
 
         // TODO fix ground projection

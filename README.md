@@ -10,6 +10,7 @@ Fix spatial references
 - Day/Night cycle
 - 3d text
 - add cars in streets?
+- interpolation between terrain heights
 - Models: tree, light, power line tower, car, house icon, arrow
 
 

@@ -1,6 +1,6 @@
 import {
     AmbientLight, Color, CullFaceNone, FrontFaceDirectionCCW, FrontFaceDirectionCW, Group, OrbitControls,
-    PerspectiveCamera, Scene, Vector3,
+    PerspectiveCamera, PointLight, Scene, Vector3,
     WebGLRenderer
 } from "three";
 import * as THREE from "three";
@@ -31,7 +31,10 @@ export default class Environment {
         canvas.width = Math.floor(window.innerWidth * 0.8)
 
         this.scene = new Scene()
-        this.scene.add(new AmbientLight())
+        this.scene.add(new AmbientLight('#CCCCCC', 0.25))
+        let light = new PointLight(0xffffff, 1, 10000);
+        light.position.set(0, 1000, 0);
+        this.scene.add(light);
 
         // WebGL renderer
         this.renderer = new WebGLRenderer({
