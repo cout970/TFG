@@ -11,7 +11,7 @@ export class WorldHandler {
 
         this.get("/api/scene/0").then(i => this.loadScene(i)).catch(console.log)
 
-        this.loadHeightMap()
+        // this.loadHeightMap()
         this.createOriginModel()
     }
 
@@ -140,7 +140,6 @@ export class WorldHandler {
     }
 
     static onTick() {
-
     }
 
     //https://stackoverflow.com/questions/398299/looping-in-a-spiral

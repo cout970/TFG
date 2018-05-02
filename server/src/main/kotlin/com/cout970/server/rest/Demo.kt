@@ -39,6 +39,8 @@ fun createDemoScene(): Scene {
     val buildings = SceneBaker.bakeShapes(ShapeDAO.buildings)
     println("Baking streets...")
     val streets = SceneBaker.bakeShapes(ShapeDAO.streets)
+    println("Baking lights...")
+    val lights = SceneBaker.bakeShapes(ShapeDAO.lightPoints)
     println("Building scene...")
 
     // Geometry generation
@@ -49,7 +51,7 @@ fun createDemoScene(): Scene {
 
     val cubeGeom2 = Cube.fromCoordinates(
             Coords3d(0.0, 0.0, 0.0),
-            Coords3d(100.0, 800.0, 100.0)
+            Coords3d(1.0, 1.0, 1.0)
     ).toGeometry()
 
     val cubeMaterial = Material(
@@ -129,6 +131,11 @@ fun createDemoScene(): Scene {
                     minDistance = 0f,
                     maxDistance = 2000f,
                     shapes = listOf(cubeShapeLine)
+            ), Rule(
+                    filter = "ignore",
+                    minDistance = 0f,
+                    maxDistance = 2000f,
+                    shapes = listOf(lights)
             ))
     )
 
@@ -173,7 +180,9 @@ fun createDemoScene(): Scene {
                     minDistance = 0f,
                     maxDistance = 2000f,
                     shapes = listOf(SceneBaker.bakeShapes(
-                            areaOf(0..100, 0..100).map { cubeShapePoint }.toList()
+                            areaOf(0..100, 0..100).map { (x, y) ->
+                                cubeShapePoint.copy(position = Vector3(x.toFloat() * 20, 0f, y.toFloat() * 20))
+                            }.toList()
                     ))
             ))
     )
@@ -188,6 +197,6 @@ fun createDemoScene(): Scene {
             title = "Demo scene",
             abstract = "A demo scene showing the base components of a scene",
             viewPoints = listOf(mainViewPoint),
-            layers = listOf(buildingLayer, streetsLayer) //, heightDebugLayer, lightsLayer, treesLayer)
+            layers = listOf(streetsLayer, lightsLayer, heightDebugLayer) //, heightDebugLayer, buildingsLayer, treesLayer)
     )
 }

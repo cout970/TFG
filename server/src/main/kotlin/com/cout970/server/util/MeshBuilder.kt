@@ -68,7 +68,6 @@ object MeshBuilder {
             else -> 16 // 2
         }
 
-        println("diff: ${TerrainLoader.envelope - TerrainLoader.ORIGIN}")
         val x = chunk.posX + TerrainLoader.envelope.x - TerrainLoader.ORIGIN.x // - ORIGIN.x
         val z = chunk.posY + TerrainLoader.envelope.z - TerrainLoader.ORIGIN.z // - ORIGIN.z
 

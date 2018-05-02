@@ -26,14 +26,6 @@ object DDBBManager {
         if (connection !is PGConnection)
             throw IllegalStateException("Invalid connection type: ${connection::class.java}, for $connection")
 
-        /*
-        * Add the geometry types to the connection. Note that you
-        * must cast the connection to the pgsql-specific connection
-        * implementation before calling the addDataType() method.
-        */
-//        connection.addDataType("geometry", Class.forName("org.postgis.PGgeometry") as Class<PGobject>)
-//        connection.addDataType("box3d", Class.forName("org.postgis.PGboxbase") as Class<PGobject>)
-
         val result = connection.func()
         connection.close()
         return result

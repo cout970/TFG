@@ -54,7 +54,7 @@ object Rest {
             // scenes
             get("/api/scene/:id") {
                 val writer = JsonWriter(OutputStreamWriter(this.response.raw().outputStream, "UTF-8"))
-//                bakeScene()
+                println("Loading scene")
                 gson.toJson(scene, Defs.Scene::class.java, writer)
                 writer.close()
                 ""
@@ -62,6 +62,8 @@ object Rest {
 
             get("/api/binary/:id") {
                 val id = request.params("id")
+
+                println("Loading binary blob: $id")
 
                 val array = cacheMap[id] ?: return@get ""
 

@@ -69,12 +69,12 @@ object SceneBaker {
 
     private fun bakeShapeAtPoint(shape: Shape.ShapeAtPoint): BakedShape {
         val model = shape.model
-        val projection = project(shape.projection, shape.position)
 
         val newGeometry = model.geometry.transform(
-                translation = shape.position + Vector3(0f, projection.y, 0f),
+                translation = shape.position,
                 rotation = shape.rotation,
-                scale = shape.scale
+                scale = shape.scale,
+                projection = shape.projection
         )
 
         return saveInCache(newGeometry, model.material)
@@ -88,16 +88,15 @@ object SceneBaker {
         val numPoints = sqrt(line.x * line.x + line.z * line.z).toInt()
 
         val geometries = mutableListOf<Geometry>()
-        val projection = shape.projection
 
         repeat(numPoints) { i ->
             val point2d = start + (direction * shape.gap * i.toFloat())
-            val point = project(projection, point2d)
 
             geometries += shape.model.geometry.transform(
-                    translation = point,
+                    translation = point2d,
                     rotation = shape.rotation,
-                    scale = shape.scale
+                    scale = shape.scale,
+                    projection = shape.projection
             )
         }
 
@@ -133,12 +132,11 @@ object SceneBaker {
         }
 
         locations.forEach { point2d ->
-            val point = project(shape.projection, Vector3(point2d.x, 0f, point2d.y))
-
             geometries += shape.model.geometry.transform(
-                    translation = point,
+                    translation = Vector3(point2d.x, 0f, point2d.y),
                     rotation = shape.rotation,
-                    scale = shape.scale
+                    scale = shape.scale,
+                    projection = shape.projection
             )
         }
 
@@ -166,22 +164,19 @@ object SceneBaker {
             )
         }
 
-        val point = triangles.flatMap { it.points }.center()
-
-        val yPos = project(shape.projection, Vector3(point.x.toFloat(), 0f, point.z.toFloat())).y
-
         val newGeometry = triangles.toGeometry().transform(
-                translation = Vector3(0f, yPos, 0f),
+                translation = Vector3(),
                 rotation = shape.rotation,
-                scale = shape.scale
+                scale = shape.scale,
+                projection = shape.projection
         )
 
         return saveInCache(newGeometry, shape.material)
     }
 
     private fun project(projection: GroundProjection, point: Vector3): Vector3 {
-        val xPos = point.x + TerrainLoader.ORIGIN.x
-        val zPos = point.z + TerrainLoader.ORIGIN.z
+        val xPos = point.x - (TerrainLoader.envelope.x - TerrainLoader.ORIGIN.x)
+        val zPos = point.z - (TerrainLoader.envelope.z - TerrainLoader.ORIGIN.z)
         val height = TerrainLoader.getHeight(xPos, zPos)
 
         // TODO fix ground projection
@@ -206,7 +201,7 @@ object SceneBaker {
         return 0.5f * (-p1.y * p2.x + p0.y * (-p1.x + p2.x) + p0.x * (p1.y - p2.y) + p1.x * p2.y)
     }
 
-    private fun Geometry.transform(translation: Vector3, rotation: Rotation, scale: Vector3): Geometry {
+    private fun Geometry.transform(translation: Vector3, rotation: Rotation, scale: Vector3, projection: GroundProjection): Geometry {
         val matrix = Matrix4f().apply {
             translate(translation)
             rotate(rotation.angle, rotation.axis)
@@ -227,8 +222,10 @@ object SceneBaker {
 
                 matrix.transform(input, output)
 
+                val pos = project(projection, Vector3(output.x, 0f, output.z))
+
                 newData[i * 3] = output.x
-                newData[i * 3 + 1] = output.y
+                newData[i * 3 + 1] = output.y + pos.y
                 newData[i * 3 + 2] = output.z
             }
 

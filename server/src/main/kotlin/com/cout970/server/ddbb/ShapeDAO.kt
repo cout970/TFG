@@ -4,13 +4,19 @@ import com.cout970.server.rest.Defs
 import com.cout970.server.rest.Defs.GroundProjection.DefaultGroundProjection
 import com.cout970.server.rest.Defs.Polygon
 import com.cout970.server.rest.Defs.Shape.ExtrudeSurface
+import com.cout970.server.rest.Defs.Shape.ShapeAtPoint
 import com.cout970.server.rest.Vector2
 import com.cout970.server.rest.Vector3
 import com.cout970.server.util.TerrainLoader
+import com.cout970.server.util.TerrainLoader.ORIGIN
 import com.cout970.server.util.areaOf
+import com.cout970.server.util.toGeometry
+import eu.printingin3d.javascad.coords.Coords3d
+import eu.printingin3d.javascad.models.Cube
 import org.joml.Vector3f
 import org.postgis.MultiPolygon
 import org.postgis.PGgeometry
+import org.postgis.Point
 import kotlin.streams.toList
 import org.postgis.Polygon as PGPolygon
 
@@ -19,6 +25,7 @@ object ShapeDAO {
 
     lateinit var buildings: List<ExtrudeSurface>
     lateinit var streets: List<ExtrudeSurface>
+    lateinit var lightPoints: List<ShapeAtPoint>
 
     fun loadData() {
         val pairs = areaOf(-5..5, -5..5).toList()
@@ -29,6 +36,10 @@ object ShapeDAO {
 
         streets = pairs.parallelStream()
                 .flatMap { pos -> ShapeDAO.getStreets(pos).stream() }
+                .toList()
+
+        lightPoints = pairs.parallelStream()
+                .flatMap { pos -> ShapeDAO.getLightPoints(pos).stream() }
                 .toList()
     }
 
@@ -80,7 +91,7 @@ object ShapeDAO {
     private fun getStreets(pos: Pair<Int, Int>): List<ExtrudeSurface> {
         var count = 0
         val sql = """
-                SELECT geom, ancho
+                SELECT geom
                 FROM calles, ${getAreaString(pos)} AS area
                 WHERE municipio = '078' AND ST_Within(geom, area);
                       """
@@ -118,6 +129,57 @@ object ShapeDAO {
                             specularColor = Defs.Color(1f, 1f, 1f),
                             transparency = 0f
                     )
+            )
+        }
+    }
+
+    private fun getLightPoints(pos: Pair<Int, Int>): List<ShapeAtPoint> {
+        var count = 0
+        val sql = """
+                SELECT geom
+                FROM "puntos de luz", ${getAreaString(pos)} AS area
+                WHERE municipio = '078' AND ST_Within(geom, area);
+                      """
+
+
+        val points = DDBBManager.load(sql) {
+
+            val geom = it.getObject("geom") as PGgeometry
+
+            val point = geom.geometry as Point
+            count++
+
+            Vector2(point.x.toFloat() - ORIGIN.x, point.y.toFloat() - ORIGIN.z)
+        }
+
+        println("Loaded $count geometries")
+
+        val geom = Cube.fromCoordinates(
+                Coords3d(0.4, 0.0, 0.4),
+                Coords3d(0.6, 4.0, 0.6)
+        ).addModel(Cube.fromCoordinates(
+                Coords3d(0.0, 4.0, 0.0),
+                Coords3d(1.0, 5.0, 1.0)
+        )).toGeometry()
+
+        val mat = Defs.Material(
+                ambientIntensity = 0.5f,
+                shininess = 0f,
+                diffuseColor = Defs.Color(1f, 1f, 0.0f),
+                emissiveColor = Defs.Color(0.1f, 0.1f, 0.1f),
+                specularColor = Defs.Color(.1f, 1f, 1f),
+                transparency = 0f
+        )
+
+        val model = Defs.Model(geom, mat)
+
+        return points.map {
+            ShapeAtPoint(
+                    position = Vector3(it.x, 0f, it.y),
+                    rotation = Defs.Rotation(0f, Vector3f(0f, 0f, 0f)),
+                    scale = Vector3(1f),
+                    projection = DefaultGroundProjection(0f),
+                    model = model
             )
         }
     }
