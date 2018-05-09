@@ -1,10 +1,12 @@
 package com.cout970.server.util
 
 import com.cout970.server.rest.Defs
+import com.cout970.server.rest.Vector2
 import eu.printingin3d.javascad.coords.Triangle3d
 import eu.printingin3d.javascad.models.IModel
 import eu.printingin3d.javascad.vrl.FacetGenerationContext
 import eu.printingin3d.javascad.vrl.Polygon
+import com.cout970.server.rest.Defs.Polygon as Polygon2D
 
 @JvmName("toGeometryFromPolygon")
 fun List<Polygon>.toGeometry(): Defs.Geometry {
@@ -20,4 +22,25 @@ fun List<Triangle3d>.toGeometry(): Defs.Geometry {
 
 fun IModel.toGeometry(): Defs.Geometry {
     return toCSG(FacetGenerationContext.DEFAULT).polygons.toGeometry()
+}
+
+fun Polygon2D.triangles(): List<Vector2> {
+    val data = DoubleArray(points.size * 2)
+
+    points.forEachIndexed { index, point ->
+        data[index * 2] = point.x.toDouble()
+        data[index * 2 + 1] = point.y.toDouble()
+    }
+
+    val indices = Earcut.earcut(data)
+
+    val list = mutableListOf<Vector2>()
+
+    indices.windowed(3,3).forEach {
+        list += points[it[2]]
+        list += points[it[1]]
+        list += points[it[0]]
+    }
+
+    return list
 }

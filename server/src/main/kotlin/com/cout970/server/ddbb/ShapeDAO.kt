@@ -6,10 +6,8 @@ import com.cout970.server.rest.Defs.Polygon
 import com.cout970.server.rest.Defs.Shape.*
 import com.cout970.server.rest.Vector2
 import com.cout970.server.rest.Vector3
-import com.cout970.server.util.TerrainLoader
+import com.cout970.server.util.*
 import com.cout970.server.util.TerrainLoader.ORIGIN
-import com.cout970.server.util.areaOf
-import com.cout970.server.util.toGeometry
 import eu.printingin3d.javascad.coords.Coords3d
 import eu.printingin3d.javascad.coords.Dims3d
 import eu.printingin3d.javascad.models.Cube
@@ -24,10 +22,10 @@ import org.postgis.Polygon as PGPolygon
 object ShapeDAO {
 
     lateinit var buildings: List<ExtrudeSurface>
-    lateinit var streets: List<ExtrudeSurface>
-    lateinit var schools: List<ExtrudeSurface>
-    lateinit var parks: List<ShapeAtSurface>
-    lateinit var lightPoints: List<ShapeAtPoint>
+    lateinit var streets: List<ShapeAtPoint>
+//    lateinit var schools: List<ExtrudeSurface>
+//    lateinit var parks: List<ShapeAtSurface>
+//    lateinit var lightPoints: List<ShapeAtPoint>
 
     fun loadData() {
         val pairs = areaOf(0..0, 0..0).toList()
@@ -40,17 +38,17 @@ object ShapeDAO {
                 .flatMap { pos -> ShapeDAO.getStreets(pos).stream() }
                 .toList()
 
-        lightPoints = pairs.parallelStream()
-                .flatMap { pos -> ShapeDAO.getLightPoints(pos).stream() }
-                .toList()
-
-        schools = pairs.parallelStream()
-                .flatMap { pos -> ShapeDAO.getSchools(pos).stream() }
-                .toList()
-
-        parks = pairs.parallelStream()
-                .flatMap { pos -> ShapeDAO.getParks(pos).stream() }
-                .toList()
+//        lightPoints = pairs.parallelStream()
+//                .flatMap { pos -> ShapeDAO.getLightPoints(pos).stream() }
+//                .toList()
+//
+//        schools = pairs.parallelStream()
+//                .flatMap { pos -> ShapeDAO.getSchools(pos).stream() }
+//                .toList()
+//
+//        parks = pairs.parallelStream()
+//                .flatMap { pos -> ShapeDAO.getParks(pos).stream() }
+//                .toList()
     }
 
     private fun getBuildings(pos: Pair<Int, Int>): List<ExtrudeSurface> {
@@ -189,7 +187,7 @@ object ShapeDAO {
         }
     }
 
-    private fun getStreets(pos: Pair<Int, Int>): List<ExtrudeSurface> {
+    private fun getStreets(pos: Pair<Int, Int>): List<ShapeAtPoint> {
         var count = 0
         val sql = """
                 SELECT geom
@@ -202,34 +200,58 @@ object ShapeDAO {
             val geom = it.getObject("geom") as PGgeometry
 
             val multiPolygon = geom.geometry as MultiPolygon
-            val color = randomColor3() //randomColor()
             count++
 
             multiPolygon.polygons.map { poly ->
-                Pair(poly.toPolygon().relativize(), color)
+                poly.toPolygon().relativize()
             }
         }.flatten()
 
         println("Loaded $count geometries")
 
-        return streets.map { (polygon, color) ->
+        val mat = Defs.Material(
+                ambientIntensity = 0.5f,
+                shininess = 0f,
+                diffuseColor = randomColor3(),
+                emissiveColor = Defs.Color(0f, 0f, 0f),
+                specularColor = Defs.Color(1f, 1f, 1f),
+                transparency = 0f
+        )
 
-            ExtrudeSurface(
-                    surface = polygon,
-                    height = 0.5f,
-                    rotation = Defs.Rotation(0f, Vector3f(0f, 0f, 0f)),
-                    scale = Vector3(1f),
-                    projection = DefaultGroundProjection(1f),
-                    material = Defs.Material(
-                            ambientIntensity = 0.5f,
-                            shininess = 0f,
-                            diffuseColor = color,
-                            emissiveColor = Defs.Color(0f, 0f, 0f),
-                            specularColor = Defs.Color(1f, 1f, 1f),
-                            transparency = 0f
-                    )
-            )
-        }
+        return listOf(
+                ShapeAtPoint(
+                        Defs.Model(streets.toGeometry(), mat),
+                        rotation = Defs.Rotation(0f, Vector3f(0f, 0f, 0f)),
+                        scale = Vector3(1f),
+                        projection = DefaultGroundProjection(1f),
+                        position = Vector3f()
+                )
+        )
+//        return streets.map { polygon ->
+//
+//            ShapeAtPoint(
+//                    Defs.Model(polygon.toGeometry(), mat),
+//                    rotation = Defs.Rotation(0f, Vector3f(0f, 0f, 0f)),
+//                    scale = Vector3(1f),
+//                    projection = DefaultGroundProjection(1f),
+//                    position = Vector3f()
+//            )
+//            ExtrudeSurface(
+//                    surface = polygon,
+//                    height = 0.5f,
+//                    rotation = Defs.Rotation(0f, Vector3f(0f, 0f, 0f)),
+//                    scale = Vector3(1f),
+//                    projection = DefaultGroundProjection(1f),
+//                    material = Defs.Material(
+//                            ambientIntensity = 0.5f,
+//                            shininess = 0f,
+//                            diffuseColor = color,
+//                            emissiveColor = Defs.Color(0f, 0f, 0f),
+//                            specularColor = Defs.Color(1f, 1f, 1f),
+//                            transparency = 0f
+//                    )
+//            )
+//        }
     }
 
     private fun getLightPoints(pos: Pair<Int, Int>): List<ShapeAtPoint> {
@@ -322,6 +344,18 @@ object ShapeDAO {
     private fun randomColor4(): Defs.Color {
         val c = java.awt.Color.getHSBColor(240.1f / 360f, 0.5f, 1f)
         return Defs.Color(c.red / 255f, c.green / 255f, c.blue / 255f)
+    }
+
+    fun Polygon.toGeometry(): Defs.Geometry {
+        val coords = points.flatMap { listOf(it.x, 0f, it.y) }
+
+        return MeshBuilder.buildGeometry(coords)
+    }
+
+    fun List<Polygon>.toGeometry(): Defs.Geometry {
+        val coords = flatMap { it.triangles() }.flatMap { listOf(it.x, 0f, it.y) }
+
+        return MeshBuilder.buildGeometry(coords)
     }
 
 //    fun getBuildingsIn(pos: Pair<Int, Int>): Defs.Geometry {
