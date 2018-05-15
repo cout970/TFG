@@ -1,6 +1,5 @@
 package com.cout970.server.util
 
-import com.cout970.modeler.util.collections.FloatArrayList
 import com.cout970.server.rest.Defs
 import com.cout970.server.rest.Defs.Geometry
 import com.cout970.server.rest.Defs.GroundProjection
@@ -12,6 +11,7 @@ import com.cout970.server.rest.Defs.Shape.BakedShape
 import com.cout970.server.rest.Rest
 import com.cout970.server.rest.Vector2
 import com.cout970.server.rest.Vector3
+import com.cout970.server.util.collections.FloatArrayList
 import eu.printingin3d.javascad.basic.Angle
 import eu.printingin3d.javascad.coords.Coords3d
 import eu.printingin3d.javascad.coords.Triangle3d
@@ -177,19 +177,45 @@ object SceneBaker {
         return saveInCache(newGeometry, shape.material)
     }
 
-    private fun project(projection: GroundProjection, point: Vector3): Vector3 {
-        val xPos = point.x + TerrainLoader.ORIGIN.x
-        val zPos = point.z + TerrainLoader.ORIGIN.z
-        val height = TerrainLoader.getHeight(xPos, zPos)
+    private fun project(projection: GroundProjection, points: FloatArray): FloatArray {
 
-        // TODO fix ground projection
-        val y = when (projection) {
-            is DefaultGroundProjection -> height + projection.elevation
-            is FlatProjection -> projection.elevation
+        when (projection) {
+            is DefaultGroundProjection -> {
+                var min = Float.MAX_VALUE
+                var max = Float.MIN_VALUE
+
+                points.indices.windowed(3, 3).forEach { i ->
+                    val xPos = points[i[0]] + TerrainLoader.ORIGIN.x
+                    val zPos = points[i[2]] + TerrainLoader.ORIGIN.z
+
+                    val h = TerrainLoader.getHeight(xPos, zPos)
+                    min = Math.min(min, h)
+                    max = Math.max(max, h)
+                }
+
+                if (projection.top) {
+                    points.indices.windowed(3, 3).forEach { i ->
+                        points[i[1]] += max
+                    }
+
+                } else {
+                    points.indices.windowed(3, 3).forEach { i ->
+                        points[i[1]] += min
+                    }
+                }
+            }
+            is SnapProjection -> {
+                points.indices.windowed(3, 3).forEach { i ->
+                    val xPos = points[i[0]] + TerrainLoader.ORIGIN.x
+                    val zPos = points[i[2]] + TerrainLoader.ORIGIN.z
+
+                    points[i[1]] += TerrainLoader.getHeight(xPos, zPos)
+                }
+            }
             is BridgeGroundProjection -> TODO("")
         }
 
-        return Vector3(point.x, y, point.z)
+        return points
     }
 
     //https://stackoverflow.com/questions/2049582/how-to-determine-if-a-point-is-in-a-2d-triangle
@@ -227,14 +253,12 @@ object SceneBaker {
 
                 matrix.transform(input, output)
 
-                val pos = project(projection, Vector3(output.x, 0f, output.z))
-
                 newData[i * 3] = output.x
-                newData[i * 3 + 1] = output.y + pos.y
+                newData[i * 3 + 1] = output.y
                 newData[i * 3 + 2] = output.z
             }
 
-            attr.copy(data = newData)
+            attr.copy(data = project(projection, newData))
         }
 
         return copy(attributes = newAttributes)

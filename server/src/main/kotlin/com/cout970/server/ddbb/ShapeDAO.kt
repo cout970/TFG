@@ -2,6 +2,7 @@ package com.cout970.server.ddbb
 
 import com.cout970.server.rest.Defs
 import com.cout970.server.rest.Defs.GroundProjection.DefaultGroundProjection
+import com.cout970.server.rest.Defs.GroundProjection.SnapProjection
 import com.cout970.server.rest.Defs.Polygon
 import com.cout970.server.rest.Defs.Shape.*
 import com.cout970.server.rest.Vector2
@@ -23,9 +24,9 @@ object ShapeDAO {
 
     lateinit var buildings: List<ExtrudeSurface>
     lateinit var streets: List<ShapeAtPoint>
-//    lateinit var schools: List<ExtrudeSurface>
-//    lateinit var parks: List<ShapeAtSurface>
-//    lateinit var lightPoints: List<ShapeAtPoint>
+    lateinit var schools: List<ExtrudeSurface>
+    lateinit var parks: List<ShapeAtSurface>
+    lateinit var lightPoints: List<ShapeAtPoint>
 
     fun loadData() {
         val pairs = areaOf(0..0, 0..0).toList()
@@ -38,17 +39,17 @@ object ShapeDAO {
                 .flatMap { pos -> ShapeDAO.getStreets(pos).stream() }
                 .toList()
 
-//        lightPoints = pairs.parallelStream()
-//                .flatMap { pos -> ShapeDAO.getLightPoints(pos).stream() }
-//                .toList()
-//
-//        schools = pairs.parallelStream()
-//                .flatMap { pos -> ShapeDAO.getSchools(pos).stream() }
-//                .toList()
-//
-//        parks = pairs.parallelStream()
-//                .flatMap { pos -> ShapeDAO.getParks(pos).stream() }
-//                .toList()
+        lightPoints = pairs.parallelStream()
+                .flatMap { pos -> ShapeDAO.getLightPoints(pos).stream() }
+                .toList()
+
+        schools = pairs.parallelStream()
+                .flatMap { pos -> ShapeDAO.getSchools(pos).stream() }
+                .toList()
+
+        parks = pairs.parallelStream()
+                .flatMap { pos -> ShapeDAO.getParks(pos).stream() }
+                .toList()
     }
 
     private fun getBuildings(pos: Pair<Int, Int>): List<ExtrudeSurface> {
@@ -83,7 +84,7 @@ object ShapeDAO {
                     height = floors * 3.5f,
                     rotation = Defs.Rotation(0f, Vector3f(0f, 0f, 0f)),
                     scale = Vector3(1f),
-                    projection = DefaultGroundProjection(0f),
+                    projection = DefaultGroundProjection(0f, false),
                     material = Defs.Material(
                             ambientIntensity = 0.5f,
                             shininess = 0f,
@@ -127,7 +128,7 @@ object ShapeDAO {
                     height = 1f,
                     rotation = Defs.Rotation(0f, Vector3f(0f, 0f, 0f)),
                     scale = Vector3(1f),
-                    projection = DefaultGroundProjection(0f),
+                    projection = DefaultGroundProjection(0f, false),
                     material = Defs.Material(
                             ambientIntensity = 0.5f,
                             shininess = 0f,
@@ -181,7 +182,7 @@ object ShapeDAO {
                     surface = polygon,
                     rotation = Defs.Rotation(0f, Vector3f(0f, 0f, 0f)),
                     scale = Vector3(1f),
-                    projection = DefaultGroundProjection(0f),
+                    projection = DefaultGroundProjection(0f, false),
                     resolution = 0.01f
             )
         }
@@ -223,7 +224,7 @@ object ShapeDAO {
                         Defs.Model(streets.toGeometry(), mat),
                         rotation = Defs.Rotation(0f, Vector3f(0f, 0f, 0f)),
                         scale = Vector3(1f),
-                        projection = DefaultGroundProjection(1f),
+                        projection = SnapProjection(1f),
                         position = Vector3f()
                 )
         )
@@ -299,7 +300,7 @@ object ShapeDAO {
                     position = Vector3(it.x, 0f, it.y),
                     rotation = Defs.Rotation(0f, Vector3f(0f, 0f, 0f)),
                     scale = Vector3(1f),
-                    projection = DefaultGroundProjection(0f),
+                    projection = DefaultGroundProjection(0f, false),
                     model = model
             )
         }
@@ -316,12 +317,18 @@ object ShapeDAO {
 
     private fun PGPolygon.toPolygon(): Polygon {
         val points = getRing(0).points.map { Vector2(it.x.toFloat(), it.y.toFloat()) }
-        return Polygon(points)
+        val holes = (2..numRings()).map { getRing(it - 1).points.map { Vector2(it.x.toFloat(), it.y.toFloat()) } }
+
+        if (numRings() != 1) println(numRings())
+
+        return Polygon(points, holes)
     }
 
     private fun Polygon.relativize(): Polygon {
         // .flip()
-        return Polygon(points.map { Vector2(it.x - TerrainLoader.ORIGIN.x, -(it.y - TerrainLoader.ORIGIN.z)) })
+        return Polygon(
+                points.map { Vector2(it.x - TerrainLoader.ORIGIN.x, -(it.y - TerrainLoader.ORIGIN.z)) },
+                holes.map { it.map { Vector2(it.x - TerrainLoader.ORIGIN.x, -(it.y - TerrainLoader.ORIGIN.z)) } })
 //        return Polygon(points.map { Vector2(it.x, it.y) })
     }
 
@@ -346,14 +353,8 @@ object ShapeDAO {
         return Defs.Color(c.red / 255f, c.green / 255f, c.blue / 255f)
     }
 
-    fun Polygon.toGeometry(): Defs.Geometry {
-        val coords = points.flatMap { listOf(it.x, 0f, it.y) }
-
-        return MeshBuilder.buildGeometry(coords)
-    }
-
     fun List<Polygon>.toGeometry(): Defs.Geometry {
-        val coords = flatMap { it.triangles() }.flatMap { listOf(it.x, 0f, it.y) }
+        val coords = flatMap { it.triangles() }.flatMap { listOf(it.x, 1f, it.y) }
 
         return MeshBuilder.buildGeometry(coords)
     }

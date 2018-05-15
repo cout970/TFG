@@ -4,6 +4,7 @@ import com.cout970.server.ddbb.ShapeDAO
 import com.cout970.server.rest.Defs.CameraType.PERSPECTIVE
 import com.cout970.server.rest.Defs.Color
 import com.cout970.server.rest.Defs.GroundProjection.DefaultGroundProjection
+import com.cout970.server.rest.Defs.GroundProjection.SnapProjection
 import com.cout970.server.rest.Defs.Layer
 import com.cout970.server.rest.Defs.Material
 import com.cout970.server.rest.Defs.Model
@@ -91,7 +92,7 @@ fun createDemoScene(): Scene {
             position = Vector3f(10f, 0f, 10f),
             rotation = Rotation(0f, Vector3f(0f, 0f, 0f)),
             scale = Vector3(1f),
-            projection = DefaultGroundProjection(0f)
+            projection = SnapProjection(0f)
     )
 
     val cubeShapeLine = ShapeAtLine(
@@ -102,7 +103,7 @@ fun createDemoScene(): Scene {
             lineEnd = Vector3f(1f, 0f, 1f),
             initialGap = 0f,
             gap = 25f,
-            projection = DefaultGroundProjection(0f)
+            projection = DefaultGroundProjection(0f, true)
     )
 
     val cubeShapeSurface = ShapeAtSurface(
@@ -116,7 +117,7 @@ fun createDemoScene(): Scene {
             rotation = Rotation(0f, Vector3f(0f, 0f, 0f)),
             scale = Vector3(1f),
             resolution = 0.001f,
-            projection = DefaultGroundProjection(0f)
+            projection = SnapProjection(0f)
     )
 
     val cubeShapeExtrude = ExtrudeSurface(
@@ -130,7 +131,7 @@ fun createDemoScene(): Scene {
             rotation = Rotation(0f, Vector3f(0f, 0f, 0f)),
             scale = Vector3(1f),
             material = cubeMaterial,
-            projection = DefaultGroundProjection(0f)
+            projection = DefaultGroundProjection(0f, true)
     )
 
     val lightsLayer = Layer(
@@ -182,9 +183,9 @@ fun createDemoScene(): Scene {
             ))
     )
 
-    val heightDebugLayer = Layer(
-            name = "Debug heights",
-            description = "This layer shows the ground projection over cubes",
+    val TerrainLayer = Layer(
+            name = "Terrain height",
+            description = "This layer shows the ground level",
             rules = listOf(Rule(
                     filter = "ignore",
                     minDistance = 0f,
@@ -225,6 +226,6 @@ fun createDemoScene(): Scene {
             title = "Demo scene",
             abstract = "A demo scene showing the base components of a scene",
             viewPoints = listOf(mainViewPoint),
-            layers = listOf(streetsLayer, lightsLayer, heightDebugLayer, buildingLayer, schoolsLayer, parksLayer) //, heightDebugLayer, buildingsLayer, treesLayer)
+            layers = listOf(streetsLayer, TerrainLayer, buildingLayer, lightsLayer, parksLayer, schoolsLayer)
     )
 }

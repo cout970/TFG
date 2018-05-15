@@ -27,7 +27,8 @@ object Defs {
     )
 
     data class Polygon(
-            val points: List<Vector2>
+            val points: List<Vector2>,
+            val holes: List<List<Vector2>> = emptyList()
     )
 
     data class BufferAttribute(
@@ -73,10 +74,11 @@ object Defs {
     sealed class GroundProjection {
 
         data class DefaultGroundProjection(
-                val elevation: Float // relative to the ground
+                val elevation: Float, // relative to the ground
+                val top: Boolean
         ) : GroundProjection()
 
-        data class FlatProjection(
+        data class SnapProjection(
                 val elevation: Float // relative to the ground
         ) : GroundProjection()
 

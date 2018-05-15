@@ -1,4 +1,4 @@
-package com.cout970.modeler.util.collections
+package com.cout970.server.util.collections
 
 import java.util.*
 
