@@ -4,7 +4,8 @@ import com.cout970.server.rest.Chunk
 import com.cout970.server.rest.Defs
 import com.cout970.server.rest.Defs.Geometry
 import com.cout970.server.rest.HeightMap
-import com.cout970.server.util.TerrainLoader.ORIGIN
+import com.cout970.server.terrain.TerrainLoader
+import com.cout970.server.terrain.TerrainLoader.ORIGIN
 import org.joml.Vector3f
 import kotlin.math.min
 import kotlin.math.tanh

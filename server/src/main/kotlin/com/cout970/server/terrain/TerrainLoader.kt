@@ -1,8 +1,10 @@
-package com.cout970.server.util
+package com.cout970.server.terrain
 
 import com.cout970.server.rest.Chunk
 import com.cout970.server.rest.Rest
 import com.cout970.server.rest.heightMapOfSize
+import com.cout970.server.util.MeshBuilder
+import com.cout970.server.util.info
 import org.geotools.coverage.grid.GridCoverage2D
 import org.geotools.gce.geotiff.GeoTiffReader
 import org.joml.Vector2i
@@ -108,7 +110,7 @@ object TerrainLoader {
 
         map.values.forEach { it.maxHeight = globalMax.toFloat() }
 
-        println("Chunks in map: ${map.size}")
+        info("Chunks in map: ${map.size}")
         return map
     }
 
@@ -181,7 +183,7 @@ object TerrainLoader {
         try {
             loadLevel1Map()
         } catch (e: Exception) {
-            println("Error loading level 0: $e")
+            info("Error loading level 0: $e")
             error = true
         }
         return error

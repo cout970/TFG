@@ -27,7 +27,7 @@ export namespace Defs {
     }
 
     export interface Geometry {
-        attributes: Array<BufferAttribute>
+        attributes: BufferAttribute[]
     }
 
     export interface Material {
@@ -60,26 +60,33 @@ export namespace Defs {
     }
 
     export interface Shape {
-        models: Array<Pair<Material, Array<string>>>
+        models: Array<Pair<Material, string[]>>
+    }
+
+    export interface  Label {
+        txt: string,
+        position: Vector3,
+        scale: number
     }
 
     export interface Rule {
         filter: string,
         minDistance: number,
         maxDistance: number,
-        shapes: Array<Shape>
+        shapes: Shape[]
     }
 
     export interface Layer {
         name: string
         description: String
-        rules: Array<Rule>
+        rules: Rule[]
+        labels: Label[]
     }
 
     export interface Scene {
         title: string
         abstract: string
-        viewPoints: Array<ViewPoint>
-        layers: Array<Layer>
+        viewPoints: ViewPoint[]
+        layers: Layer[]
     }
 }

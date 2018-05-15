@@ -89,6 +89,7 @@ object Defs {
     }
 
     sealed class Shape {
+
         data class ShapeAtPoint(
                 val model: Model,
                 val position: Vector3,
@@ -126,19 +127,16 @@ object Defs {
                 val projection: GroundProjection
         ) : Shape()
 
-        // TODO Extrude?
-//        data class Extrude(
-//                val model: Model,
-//                val rotation: Rotation,
-//                val scale: Vector3,
-//                val resolution: Float,
-//                val projection: GroundProjection
-//        ) : Shape()
-
         data class BakedShape(
                 val models: List<Pair<Material, List<String>>>
         ) : Shape()
     }
+
+    data class Label(
+            val txt: String,
+            val position: Vector3,
+            val scale: Double
+    )
 
     data class Rule(
             val filter: String,
@@ -150,7 +148,8 @@ object Defs {
     data class Layer(
             val name: String,
             val description: String,
-            val rules: List<Rule>
+            val rules: List<Rule>,
+            val labels: List<Label>
     )
 
     data class Scene(

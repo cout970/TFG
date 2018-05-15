@@ -11,6 +11,7 @@ import com.cout970.server.rest.Defs.Shape.BakedShape
 import com.cout970.server.rest.Rest
 import com.cout970.server.rest.Vector2
 import com.cout970.server.rest.Vector3
+import com.cout970.server.terrain.TerrainLoader
 import com.cout970.server.util.collections.FloatArrayList
 import eu.printingin3d.javascad.basic.Angle
 import eu.printingin3d.javascad.coords.Coords3d

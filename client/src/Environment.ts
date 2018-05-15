@@ -1,19 +1,19 @@
+import * as THREE from "three";
 import {
     AmbientLight,
     Color,
-    CullFaceNone,
     DirectionalLight,
-    FrontFaceDirectionCCW,
-    FrontFaceDirectionCW,
+    FontLoader,
     Group,
     OrbitControls,
     PerspectiveCamera,
-    PointLight,
     Scene,
     Vector3,
     WebGLRenderer
 } from "three";
-import * as THREE from "three";
+import {Font} from "three/three-core";
+
+const helvetiker_regular = require('./style/fonts/helvetiker_regular.typeface.json')
 
 const StatsCtr = require("stats.js")
 const OrbitControlsCtr = require("ndb-three-orbit-controls")(require("three"))
@@ -29,6 +29,8 @@ export default class Environment {
     static ground: Group
     static layers: Group
     static axis: Group
+
+    static font: Font
 
     static onTick: () => any
     static guiCallback: () => void;
@@ -137,6 +139,8 @@ export default class Environment {
                 }
             }
         }
+        let fontLoader = new FontLoader();
+        Environment.font = fontLoader.parse(helvetiker_regular);
 
         // On window change size
         window.addEventListener("resize", () => {

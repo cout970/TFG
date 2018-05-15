@@ -4,6 +4,8 @@ import com.cout970.server.rest.Defs
 import com.cout970.server.rest.Defs.Polygon
 import com.cout970.server.rest.Defs.Shape.BakedShape
 import com.cout970.server.rest.Rest
+import com.cout970.server.rest.Vector2
+import com.cout970.server.terrain.TerrainLoader
 import eu.printingin3d.javascad.coords.Coords3d
 import java.util.*
 
@@ -105,4 +107,46 @@ fun BakedShape.merge(other: BakedShape): BakedShape {
 
 fun areaOf(rangeX: IntRange, rangeY: IntRange): Sequence<Pair<Int, Int>> {
     return rangeX.asSequence().flatMap { x -> rangeY.asSequence().map { y -> x to y } }
+}
+
+fun List<Polygon>.toGeometry(): Defs.Geometry {
+    val coords = flatMap { it.triangles() }.flatMap { listOf(it.x, 1f, it.y) }
+
+    return MeshBuilder.buildGeometry(coords)
+}
+
+fun getAreaString(pos: Pair<Int, Int>): String {
+    val minX = TerrainLoader.ORIGIN.x + (-2) * 1000
+    val minY = TerrainLoader.ORIGIN.z + (-2) * 1000
+    val maxX = TerrainLoader.ORIGIN.x + (2) * 1000
+    val maxY = TerrainLoader.ORIGIN.z + (2) * 1000
+
+    return "ST_GeomFromText('POLYGON(($minX $minY,$minX $maxY,$maxX $maxY,$maxX $minY,$minX $minY))')"
+}
+
+fun org.postgis.Polygon.toPolygon(): Polygon {
+    val points = getRing(0).points.map { Vector2(it.x.toFloat(), it.y.toFloat()) }
+    val holes = (2..numRings()).map { getRing(it - 1).points.map { Vector2(it.x.toFloat(), it.y.toFloat()) } }
+
+    return Polygon(points, holes)
+}
+
+fun Polygon.relativize(): Polygon {
+    // .flip()
+    return Polygon(
+            points.map { Vector2(it.x - TerrainLoader.ORIGIN.x, -(it.y - TerrainLoader.ORIGIN.z)) },
+            holes.map { it.map { Vector2(it.x - TerrainLoader.ORIGIN.x, -(it.y - TerrainLoader.ORIGIN.z)) } })
+//        return Polygon(points.map { Vector2(it.x, it.y) })
+}
+
+fun Vector2.relativize(): Vector2 {
+    return Vector2(
+            x - TerrainLoader.ORIGIN.x,
+            -(y - TerrainLoader.ORIGIN.z)
+    )
+}
+
+fun colorFromHue(hue: Float): Defs.Color {
+    val c = java.awt.Color.getHSBColor(hue, 0.5f, 1f)
+    return Defs.Color(c.red / 255f, c.green / 255f, c.blue / 255f)
 }

@@ -1,6 +1,6 @@
 import {MeshFactory} from "./MeshFactory";
 import Environment from "./Environment";
-import {Geometry, Group, Line, LineBasicMaterial, Mesh, MeshBasicMaterial, Shape, ShapeGeometry, Vector3} from "three";
+import {Geometry, Group, Line, LineBasicMaterial, Vector3} from "three";
 import {Defs} from "./Definitions";
 
 export class WorldHandler {
@@ -10,7 +10,6 @@ export class WorldHandler {
         window['debug'] = this
 
         this.get("/api/scene/0").then(i => this.loadScene(i)).catch(console.log)
-
         // this.loadHeightMap()
         this.createOriginModel()
     }
@@ -64,6 +63,10 @@ export class WorldHandler {
                         console.log(models)
                         models.forEach(i => group.add(i))
                     })
+                })
+
+                layer.labels.forEach(label => {
+                    group.add(MeshFactory.bakeLabel(label))
                 })
 
                 return group

@@ -1,15 +1,51 @@
-import {BufferAttribute, BufferGeometry, Color, Math, Mesh, MeshPhongMaterial, Object3D, VertexColors} from "three";
+import {
+    BufferAttribute,
+    BufferGeometry,
+    Color,
+    Mesh,
+    MeshPhongMaterial,
+    Object3D,
+    TextGeometry,
+    VertexColors
+} from "three";
 import {Defs} from "./Definitions";
+import {WorldHandler} from "./WorldHandler";
+import Environment from "./Environment";
 import Material = Defs.Material;
 import Model = Defs.Model;
 import Pair = Defs.Pair;
-import {WorldHandler} from "./WorldHandler";
 
 function colorOf(c: Color): string {
     return '#' + new Color(c.r, c.g, c.b).getHexString()
 }
 
 export class MeshFactory {
+
+    static bakeLabel(label: Defs.Label): Object3D {
+        console.log(Environment.font)
+
+        let geometry = new TextGeometry(label.txt, {
+            font: Environment.font,
+            size: label.scale,
+            height: 1,
+            curveSegments: 4,
+            bevelEnabled: false,
+            bevelThickness: 10,
+            bevelSize: 8
+        });
+
+        let material = new MeshPhongMaterial({
+            color: "#FFF",
+        })
+
+        let mesh = new Mesh(geometry, material)
+
+        mesh.position.x = label.position.x
+        mesh.position.y = label.position.y
+        mesh.position.z = label.position.z
+
+        return mesh
+    }
 
     static toMeshModel(model: Defs.Model): Object3D {
         let geom = model.geometry
