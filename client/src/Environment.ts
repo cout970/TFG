@@ -13,6 +13,7 @@ import {
 } from "three";
 import {Font} from "three/three-core";
 
+
 const helvetiker_regular = require('./style/fonts/helvetiker_regular.typeface.json')
 
 const StatsCtr = require("stats.js")
@@ -140,7 +141,10 @@ export default class Environment {
             }
         }
         let fontLoader = new FontLoader();
-        Environment.font = fontLoader.parse(helvetiker_regular);
+        console.log(helvetiker_regular)
+
+        fontLoader.load(helvetiker_regular, font => Environment.font = font)
+        // Environment.font = fontLoader.parse(helvetiker_regular);
 
         // On window change size
         window.addEventListener("resize", () => {
