@@ -254,9 +254,7 @@ gradle-app.setting
 
 run/GaliciaDTM25m.tif
 
-data
 data/
-data/*
-data/**
 
 # End of https://www.gitignore.io/api/web,java,node,linux,macos,gradle,kotlin,windows,intellij+all,webstorm+all
+server/out/
