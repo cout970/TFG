@@ -1,4 +1,3 @@
-
 # Created by https://www.gitignore.io/api/java,node,linux,macos,gradle,kotlin,windows,intellij+all,webstorm+all
 
 ### Intellij+all ###
@@ -254,4 +253,10 @@ gradle-app.setting
 # gradle/wrapper/gradle-wrapper.properties
 
 run/GaliciaDTM25m.tif
+
+data
+data/
+data/*
+data/**
+
 # End of https://www.gitignore.io/api/web,java,node,linux,macos,gradle,kotlin,windows,intellij+all,webstorm+all
