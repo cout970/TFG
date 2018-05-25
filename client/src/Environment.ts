@@ -13,7 +13,6 @@ import {
 } from "three";
 import {Font} from "three/three-core";
 
-
 const helvetiker_regular = require('./style/fonts/helvetiker_regular.typeface.json')
 
 const StatsCtr = require("stats.js")
@@ -82,64 +81,7 @@ export default class Environment {
         this.controls.keys.UP = 32
         this.controls.keys.BOTTOM = 16
 
-        window.onkeydown = event => {
-
-            if (event.which == 38 || event.which == 40) {
-
-                let dir = new Vector3()
-                .copy(this.controls.target)
-                .sub(this.camera.position)
-                .normalize()
-                .multiplyScalar(50)
-
-                if (event.which == 38) {
-                    // UP ARROW
-                    this.controls.target.add(dir)
-                    this.camera.position.add(dir)
-                    this.controls.update()
-
-                } else {
-                    // DOWN ARROW
-                    this.controls.target.sub(dir)
-                    this.camera.position.sub(dir)
-                    this.controls.update()
-                }
-            } else if (event.which == 65 || event.which == 68 || event.which == 87 || event.which == 83) {
-
-                let dir = new Vector3(1, 0, 0)
-                .applyAxisAngle(new Vector3(0, 1, 0), this.controls.getAzimuthalAngle())
-                .multiplyScalar(50)
-
-                let perpendicular = new Vector3()
-                .copy(dir)
-                .applyAxisAngle(new Vector3(0, 1, 0), THREE.Math.degToRad(90))
-
-                if (event.which == 65) {
-                    // A
-                    this.controls.target.sub(dir)
-                    this.camera.position.sub(dir)
-                    this.controls.update()
-
-                } else if (event.which == 68) {
-                    // D
-                    this.controls.target.add(dir)
-                    this.camera.position.add(dir)
-                    this.controls.update()
-
-                } else if (event.which == 87) {
-                    // W
-                    this.controls.target.add(perpendicular)
-                    this.camera.position.add(perpendicular)
-                    this.controls.update()
-
-                } else {
-                    // S
-                    this.controls.target.sub(perpendicular)
-                    this.camera.position.sub(perpendicular)
-                    this.controls.update()
-                }
-            }
-        }
+        window.onkeydown = this.onKeyUp.bind(this)
         let fontLoader = new FontLoader();
         console.log(helvetiker_regular)
 
@@ -156,6 +98,65 @@ export default class Environment {
         }, false)
 
         this.setupGroups()
+    }
+
+    private static onKeyUp(event) {
+
+        if (event.which == 38 || event.which == 40) {
+
+            let dir = new Vector3()
+            .copy(this.controls.target)
+            .sub(this.camera.position)
+            .normalize()
+            .multiplyScalar(50)
+
+            if (event.which == 38) {
+                // UP ARROW
+                this.controls.target.add(dir)
+                this.camera.position.add(dir)
+                this.controls.update()
+
+            } else {
+                // DOWN ARROW
+                this.controls.target.sub(dir)
+                this.camera.position.sub(dir)
+                this.controls.update()
+            }
+        } else if (event.which == 65 || event.which == 68 || event.which == 87 || event.which == 83) {
+
+            let dir = new Vector3(1, 0, 0)
+            .applyAxisAngle(new Vector3(0, 1, 0), this.controls.getAzimuthalAngle())
+            .multiplyScalar(50)
+
+            let perpendicular = new Vector3()
+            .copy(dir)
+            .applyAxisAngle(new Vector3(0, 1, 0), THREE.Math.degToRad(90))
+
+            if (event.which == 65) {
+                // A
+                this.controls.target.sub(dir)
+                this.camera.position.sub(dir)
+                this.controls.update()
+
+            } else if (event.which == 68) {
+                // D
+                this.controls.target.add(dir)
+                this.camera.position.add(dir)
+                this.controls.update()
+
+            } else if (event.which == 87) {
+                // W
+                this.controls.target.add(perpendicular)
+                this.camera.position.add(perpendicular)
+                this.controls.update()
+
+            } else {
+                // S
+                this.controls.target.sub(perpendicular)
+                this.camera.position.sub(perpendicular)
+                this.controls.update()
+            }
+        }
     }
 
     static setupGroups() {
