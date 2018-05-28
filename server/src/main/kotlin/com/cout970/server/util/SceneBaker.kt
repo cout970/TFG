@@ -1,5 +1,7 @@
 package com.cout970.server.util
 
+import com.cout970.server.glTF.GLTFBuilder
+import com.cout970.server.glTF.gltfModel
 import com.cout970.server.rest.Defs
 import com.cout970.server.rest.Defs.Geometry
 import com.cout970.server.rest.Defs.GroundProjection
@@ -26,6 +28,52 @@ import java.util.*
 import kotlin.math.sqrt
 
 object SceneBaker {
+
+    fun bake2(scene: Scene) = gltfModel {
+        bufferName = UUID.randomUUID().toString() + ".bin"
+
+        scene.layers.forEach { layer ->
+
+            scene {
+                name = layer.name
+
+                layer.rules.forEachIndexed { index, rule ->
+
+                    node {
+                        name = "rule $index"
+
+                        rule.shapes.forEachIndexed { index, shape ->
+
+                            node {
+                                name = "shape $index"
+                                shapeMesh(this, shape)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun GLTFBuilder.shapeMesh(node: GLTFBuilder.Node, shape: Shape) = node.apply {
+        mesh {
+            val baked = bakeShape(shape)
+            baked.models.forEach { (mat, geoms) ->
+
+                // TODO add material
+                geoms.forEach { geom ->
+
+                    primitive {
+
+                        val data: FloatArray = Rest.cacheMap[geom]!!
+                        val vertices = data.toList().windowed(3, 3).map { Vector3(it[0], it[1], it[2]) }
+
+                        attributes[POSITION] = buffer(FLOAT, vertices)
+                    }
+                }
+            }
+        }
+    }
 
     fun bake(scene: Scene): Scene {
         val newLayers = scene.layers.map { layer ->

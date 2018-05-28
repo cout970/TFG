@@ -18,7 +18,7 @@ fun main(args: Array<String>) {
     File(header.buffers[0].uri).writeBytes(buffer)
 }
 
-fun testExporter() = glftModel {
+fun testExporter() = gltfModel {
 
     bufferName = "debug.bin"
 
@@ -83,7 +83,7 @@ private fun GLTFBuilder.cubeMesh(node: GLTFBuilder.Node) = node.apply {
 }
 
 // Serializer
-private val GLTF_GSON = GsonBuilder()
+val GLTF_GSON = GsonBuilder()
         .registerTypeAdapter(IVector4::class.java, Vector4Serializer())
         .registerTypeAdapter(IVector3::class.java, Vector3Serializer())
         .registerTypeAdapter(IVector2::class.java, Vector2Serializer())
@@ -175,11 +175,13 @@ private object BufferViewSerializer : JsonSerializer<GltfBufferView> {
     }
 }
 
-fun glftModel(func: GLTFBuilder.() -> Unit): Pair<GltfFile, ByteArray> {
+fun gltfModel(func: GLTFBuilder.() -> Unit): Pair<GltfFile, ByteArray> {
     val builder = GLTFBuilder()
     builder.func()
     return builder.build()
 }
+
+val GltfFile.bufferName: String get() = buffers[0].uri ?: ""
 
 class GLTFBuilder {
     private val extensionsUsed = mutableListOf<String>()
@@ -239,7 +241,7 @@ class GLTFBuilder {
 
     data class Scene(
             val nodes: MutableList<Node> = mutableListOf(),
-            val name: String? = null
+            var name: String? = null
     )
 
     fun scene(func: Scene.() -> Unit) {

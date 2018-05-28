@@ -1,5 +1,8 @@
 package com.cout970.server.rest
 
+import com.cout970.server.glTF.GLTF_GSON
+import com.cout970.server.glTF.bufferName
+import com.cout970.server.util.SceneBaker
 import com.cout970.server.util.debug
 import com.cout970.server.util.info
 import com.google.gson.GsonBuilder
@@ -55,9 +58,16 @@ object Rest {
 
             post("/api/scenes") {
                 val scene = gson.fromJson(request.body(), Defs.Scene::class.java)
-//                SceneBaker.bake(scene)
-                // Do stuff
+                val (header, buffer) = SceneBaker.bake2(scene)
+                val name = "${UUID.randomUUID()}.gltf"
+
+                File(name).writeText(GLTF_GSON.toJson(header))
+                File(header.bufferName).writeBytes(buffer)
+
+                sceneRegistry[name] = name
                 saveScenes()
+
+                response.header("location", name)
             }
 
             // scenes

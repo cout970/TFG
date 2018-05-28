@@ -15,6 +15,7 @@ data class Triangle2d(
         val c: Vector2
 )
 
+//
 object Defs {
 
     data class Rotation(
