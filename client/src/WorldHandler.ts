@@ -3,15 +3,59 @@ import Environment from "./Environment";
 import {AxesHelper, Group} from "three";
 import {Defs} from "./Definitions";
 
+const GLTFLoader = require("three-gltf-loader")
+
 export class WorldHandler {
 
     static init() {
 
         window['debug'] = this
 
-        this.get("/api/scene/0").then(i => this.loadScene(i)).catch(console.log)
+        this.get("/api/scenes").then(i => {
+            console.log("Available scenes: " + JSON.stringify(i))
+            this.loadScene2(i[0])
+        })
+
+        // this.get("/api/scene/0").then(i => this.loadScene(i)).catch(console.log)
         // this.loadHeightMap()
         this.createOriginModel()
+    }
+
+    static loadScene2(id: string) {
+        let loader = new GLTFLoader();
+
+        loader.setPath('/api/files/')
+
+        loader.load(
+            `api/scene/${id}`,
+            function (gltf) {
+                let obj = gltf.scene.children[0]
+                let mesh = obj.children[0]
+                let geometry = mesh.geometry
+                // let indices: BufferAttribute = geometry.index
+
+
+                // console.log(indices.getX(0))
+                // indices.setX(0, 5)
+
+
+                console.log(geometry)
+                // console.log(gltf.scene.userData)
+                Environment.scene.add(gltf.scene)
+                console.log(`[Scene('${id}')] done`);
+            },
+            function (xhr) {
+                if (xhr.total == 0) {
+                    console.log(`[Scene('${id}')] loading...`);
+                } else {
+                    console.log(`[Scene('${id}')] ` + (xhr.loaded / xhr.total * 100) + '% loaded');
+                }
+            },
+            function (error) {
+                console.log(`[Scene('${id}')] An error happened:`);
+                console.log(error);
+            }
+        );
     }
 
     static loadArray(str: string): Promise<Float32Array> {
@@ -48,9 +92,8 @@ export class WorldHandler {
         console.log(scene)
 
         this.loadAllResources(scene).then(map => {
-            console.log("binary data loaded")
-            console.log(map)
-
+            // console.log("binary data loaded")
+            // console.log(map)
 
             let groups = scene.layers.map(layer => {
                 let group = new Group()
@@ -60,7 +103,7 @@ export class WorldHandler {
                 layer.rules.forEach(rule => {
                     rule.shapes.forEach(i => {
                         let models = MeshFactory.toMeshModels(map, i.models)
-                        console.log(models)
+                        // console.log(models)
                         models.forEach(i => group.add(i))
                     })
                 })

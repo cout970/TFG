@@ -22,8 +22,6 @@ function colorOf(c: Color): string {
 export class MeshFactory {
 
     static bakeLabel(label: Defs.Label): Object3D {
-        console.log(Environment.font)
-
         let geometry = new TextGeometry(label.txt, {
             font: Environment.font,
             size: label.scale,

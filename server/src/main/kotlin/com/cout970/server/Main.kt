@@ -35,7 +35,10 @@ fun main(args: Array<String>) {
     time = measureTimeMillis {
         error = TerrainLoader.loadHeightMaps()
     }
-    if (error) info("Done: Map loading ($time ms)") else info("Exception in Map loading ($time ms)")
+    when (error) {
+        true -> info("Exception in Map loading ($time ms)")
+        else -> info("Done: Map loading ($time ms)")
+    }
 
     System.gc()
 

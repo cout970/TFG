@@ -1,7 +1,9 @@
 package com.cout970.server.rest
 
 import com.cout970.server.util.debug
+import com.cout970.server.util.info
 import com.google.gson.GsonBuilder
+import com.google.gson.JsonParser
 import com.google.gson.stream.JsonWriter
 import spark.Request
 import spark.kotlin.ignite
@@ -21,26 +23,41 @@ object Rest {
 
     val cacheMap = Collections.synchronizedMap(mutableMapOf<String, FloatArray>())
 
+    private val sceneRegistry = mutableMapOf<String, String>()
+
     fun httpServer() {
+
+        loadScenes()
 
         ignite().apply {
             port(8080)
 
-            // web index
-            get("/") {
-                File("core-js/web/index.html").readText()
+            // get file
+            get("/api/files/:filename") {
+                File("files/${request.params("filename")}").readBytes()
             }
 
-            // web
-            get("/:file") {
-                val path = request.params("file")
-                val file = File("core-js/web/$path")
-                if (file.exists()) {
-                    file.readText()
+            get("/api/scene/:filename") {
+                val filename = request.params("filename")
+
+                if (filename in sceneRegistry) {
+                    File("files/${sceneRegistry[filename]}").readBytes()
                 } else {
                     response.status(404)
-                    "Not found"
+                    response.body("Requested scene doesn't exist")
+                    Unit
                 }
+            }
+
+            get("/api/scenes") {
+                sceneRegistry.entries.joinToString(",", prefix = "[", postfix = "]") { "\"${it.key}\"" }
+            }
+
+            post("/api/scenes") {
+                val scene = gson.fromJson(request.body(), Defs.Scene::class.java)
+//                SceneBaker.bake(scene)
+                // Do stuff
+                saveScenes()
             }
 
             // scenes
@@ -71,21 +88,34 @@ object Rest {
                 this.response.raw().outputStream.write(bytes)
                 ""
             }
-
-            //            /// buildings test
-//            get("/api/buildings/:x/:y") {
-//                gson.toJson(ShapeDAO.getBuildings(parseVector2(request)))
-//            }
-//
-//            get("/api/buildings2/:x/:y") {
-//                gson.toJson(ShapeDAO.getBuildingsIn(parseVector2(request)))
-//            }
-//
-//            /// buildings test
-//            get("/api/streets/:x/:y") {
-//                gson.toJson(ShapeDAO.getStreets(parseVector2(request)))
-//            }
         }
+    }
+
+    private fun loadScenes() {
+        val json = File("scenes.json")
+        sceneRegistry.clear()
+
+        try {
+            if (json.exists()) {
+                val obj = JsonParser().parse(json.reader())
+
+                obj.asJsonObject.entrySet().forEach { (key, value) ->
+                    sceneRegistry[key] = value.asString
+                }
+                info("Loaded scene.json")
+            } else {
+                info("File scene.json not found, creating...")
+                saveScenes()
+            }
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    private fun saveScenes() {
+        val json = File("scenes.json")
+        json.writeText(gson.toJson(sceneRegistry))
+        info("Saved scene.json")
     }
 
     private fun parseVector2(request: Request): Pair<Int, Int> {

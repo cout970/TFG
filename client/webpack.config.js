@@ -1,33 +1,42 @@
-const webpack = require('webpack')
-const path = require('path')
+var webpack = require('webpack')
+var path = require('path')
 
 module.exports = {
+    mode: "development",
     entry: path.resolve(__dirname, 'src', 'index.tsx'),
     output: {
         path: path.resolve(__dirname, 'public'),
         filename: 'bundle.js'
     },
     module: {
-        loaders: [
+        rules: [
             {
                 test: /\.tsx?$/,
-                loader: "awesome-typescript-loader"
+                use: ["awesome-typescript-loader"]
             },
             {
                 test: /\.less$/,
-                loader: "style-loader!css-loader!less-loader"
+                use: ["style-loader", "css-loader", "less-loader"]
             },
             {
                 test: /\.css$/,
-                loader: "style-loader!css-loader"
+                use: ["style-loader", "css-loader"]
             },
             {
                 test: /\.woff2?(\?v=[0-9]\.[0-9]\.[0-9])?$/,
-                loader: "url-loader"
+                use: ["url-loader"]
             },
             {
-                test: /\.(ttf|eot|svg|json)(\?v=[0-9]\.[0-9]\.[0-9])?$/,
-                loader: "file-loader"
+                test: /\.gltf$/,
+                use: ["url-loader"]
+            },
+            {
+                test: /\.bin$/,
+                use: ["url-loader"]
+            },
+            {
+                test: /\.(ttf|eot|svg)(\?v=[0-9]\.[0-9]\.[0-9])?$/,
+                use: ["file-loader"]
             }
         ]
     },
@@ -36,10 +45,10 @@ module.exports = {
     },
     devtool: "source-map",
 
-    devServer:{
+    devServer: {
         compress: true,
         port: 3000,
-        host : '0.0.0.0',
+        host: '0.0.0.0',
         proxy: {
             '/api': {
                 target: 'http://localhost:8080',

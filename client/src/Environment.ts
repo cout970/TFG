@@ -83,10 +83,8 @@ export default class Environment {
 
         window.onkeydown = this.onKeyUp.bind(this)
         let fontLoader = new FontLoader();
-        console.log(helvetiker_regular)
 
-        fontLoader.load(helvetiker_regular, font => Environment.font = font)
-        // Environment.font = fontLoader.parse(helvetiker_regular);
+        Environment.font = fontLoader.parse(JSON.stringify(helvetiker_regular))
 
         // On window change size
         window.addEventListener("resize", () => {
