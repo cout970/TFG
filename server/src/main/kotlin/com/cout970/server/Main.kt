@@ -6,7 +6,6 @@ import com.cout970.server.ddbb.DDBBManager
 import com.cout970.server.rest.Rest.httpServer
 import com.cout970.server.rest.bakeScene
 import com.cout970.server.terrain.TerrainLoader
-import com.cout970.server.terrain.TerrainLoader.bakeTerrain
 import com.cout970.server.util.ifFail
 import com.cout970.server.util.info
 import org.slf4j.LoggerFactory
@@ -35,7 +34,6 @@ fun main(args: Array<String>) {
 
     time = measureTimeMillis {
         error = TerrainLoader.loadHeightMaps()
-        bakeTerrain()
     }
     if (error) info("Done: Map loading ($time ms)") else info("Exception in Map loading ($time ms)")
 

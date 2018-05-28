@@ -186,8 +186,8 @@ object SceneBaker {
                 var max = Float.MIN_VALUE
 
                 points.indices.windowed(3, 3).forEach { i ->
-                    val xPos = points[i[0]] + TerrainLoader.ORIGIN.x
-                    val zPos = points[i[2]] + TerrainLoader.ORIGIN.z
+                    val xPos = points[i[0]] // + TerrainLoader.ORIGIN.x
+                    val zPos = points[i[2]] // + TerrainLoader.ORIGIN.z
 
                     val h = TerrainLoader.getHeight(xPos, zPos)
                     min = Math.min(min, h)
@@ -207,8 +207,8 @@ object SceneBaker {
             }
             is SnapProjection -> {
                 points.indices.windowed(3, 3).forEach { i ->
-                    val xPos = points[i[0]] + TerrainLoader.ORIGIN.x
-                    val zPos = points[i[2]] + TerrainLoader.ORIGIN.z
+                    val xPos = points[i[0]] //+ TerrainLoader.ORIGIN.x
+                    val zPos = points[i[2]] //+ TerrainLoader.ORIGIN.z
 
                     points[i[1]] += TerrainLoader.getHeight(xPos, zPos)
                 }

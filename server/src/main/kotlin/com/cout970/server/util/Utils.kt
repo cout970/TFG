@@ -116,10 +116,12 @@ fun List<Polygon>.toGeometry(): Defs.Geometry {
 }
 
 fun getAreaString(pos: Pair<Int, Int>): String {
-    val minX = TerrainLoader.ORIGIN.x + (-2) * 1000
-    val minY = TerrainLoader.ORIGIN.z + (-2) * 1000
-    val maxX = TerrainLoader.ORIGIN.x + (2) * 1000
-    val maxY = TerrainLoader.ORIGIN.z + (2) * 1000
+    val ORIGIN = TerrainLoader.ORIGIN
+
+    val minX = ORIGIN.x + (-4) * 1000
+    val minY = ORIGIN.z + (-4) * 1000
+    val maxX = ORIGIN.x + (4) * 1000
+    val maxY = ORIGIN.z + (4) * 1000
 
     return "ST_GeomFromText('POLYGON(($minX $minY,$minX $maxY,$maxX $maxY,$maxX $minY,$minX $minY))')"
 }
@@ -134,8 +136,9 @@ fun org.postgis.Polygon.toPolygon(): Polygon {
 fun Polygon.relativize(): Polygon {
     // .flip()
     return Polygon(
-            points.map { Vector2(it.x - TerrainLoader.ORIGIN.x, -(it.y - TerrainLoader.ORIGIN.z)) },
-            holes.map { it.map { Vector2(it.x - TerrainLoader.ORIGIN.x, -(it.y - TerrainLoader.ORIGIN.z)) } })
+            points.map { it.relativize() },
+            holes.map { it.map { it.relativize() } }
+    )
 //        return Polygon(points.map { Vector2(it.x, it.y) })
 }
 
@@ -150,3 +153,5 @@ fun colorFromHue(hue: Float): Defs.Color {
     val c = java.awt.Color.getHSBColor(hue, 0.5f, 1f)
     return Defs.Color(c.red / 255f, c.green / 255f, c.blue / 255f)
 }
+
+infix fun Int.upTo(other: Int): IntRange = this until other

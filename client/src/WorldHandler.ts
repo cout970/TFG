@@ -1,6 +1,6 @@
 import {MeshFactory} from "./MeshFactory";
 import Environment from "./Environment";
-import {Geometry, Group, Line, LineBasicMaterial, Vector3} from "three";
+import {AxesHelper, Group} from "three";
 import {Defs} from "./Definitions";
 
 export class WorldHandler {
@@ -85,25 +85,7 @@ export class WorldHandler {
     }
 
     private static createOriginModel() {
-        let geometry = new Geometry();
-        let geometry1 = new Geometry();
-        let geometry2 = new Geometry();
-        let material = new LineBasicMaterial({color: 0xff0000})
-        let material1 = new LineBasicMaterial({color: 0x00ff00})
-        let material2 = new LineBasicMaterial({color: 0x0000ff})
-
-        geometry.vertices.push(new Vector3(-100, 0, 0))
-        geometry.vertices.push(new Vector3(100, 0, 0))
-
-        geometry1.vertices.push(new Vector3(0, -100, 0))
-        geometry1.vertices.push(new Vector3(0, 100, 0))
-
-        geometry2.vertices.push(new Vector3(0, 0, -100))
-        geometry2.vertices.push(new Vector3(0, 0, 100))
-
-        Environment.axis.add(new Line(geometry, material))
-        Environment.axis.add(new Line(geometry1, material1))
-        Environment.axis.add(new Line(geometry2, material2))
+        Environment.axis.add(new AxesHelper(100))
     }
 
     private static loadHeightMap() {

@@ -1,5 +1,7 @@
 package com.cout970.server.rest
 
+import org.joml.Vector2ic
+
 
 class HeightMap(val map: FloatArray, val width: Int, val height: Int) {
 
@@ -15,11 +17,8 @@ class HeightMap(val map: FloatArray, val width: Int, val height: Int) {
 fun heightMapOfSize(width: Int, height: Int) = HeightMap(FloatArray(width * height), width, height)
 
 data class Chunk(
-        val posX: Float,
-        val posY: Float,
-        val heights: HeightMap,
-        var maxHeight: Float,
-        val scale: Float
+        val pos: Vector2ic,
+        val heights: HeightMap
 ) {
     lateinit var cache: Pair<String, String>
 }

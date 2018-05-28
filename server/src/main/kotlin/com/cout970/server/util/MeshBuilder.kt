@@ -1,13 +1,7 @@
 package com.cout970.server.util
 
-import com.cout970.server.rest.Chunk
 import com.cout970.server.rest.Defs
 import com.cout970.server.rest.Defs.Geometry
-import com.cout970.server.rest.HeightMap
-import com.cout970.server.terrain.TerrainLoader
-import com.cout970.server.terrain.TerrainLoader.ORIGIN
-import org.joml.Vector3f
-import kotlin.math.min
 import kotlin.math.tanh
 
 object MeshBuilder {
@@ -56,72 +50,72 @@ object MeshBuilder {
         ))
     }
 
-    fun chunkToModel(chunk: Chunk): Geometry {
-        val dist = Vector3f(chunk.posX, 0f, chunk.posY).distance(ORIGIN)
+//    fun chunkToModel(chunk: Chunk): Geometry {
+//        val dist = Vector3f(chunk.pos.x().toFloat(), 0f, chunk.pos.y().toFloat()).distance(ORIGIN)
+//
+//        val scale = when (dist) {
+//            in 0f..8666f -> 128
+//            in 6666f..16666f -> 64
+//            in 16666f..33333f -> 64
+//            in 33333f..50000f -> 32
+//            in 50000f..63333f -> 32 //8
+//            in 63333f..80000f -> 16 //4
+//            else -> 16 // 2
+//        }
+//
+//        val x = chunk.pos.x() + TerrainLoader.envelope.x - TerrainLoader.ORIGIN.x // - ORIGIN.x
+//        val z = chunk.pos.y() + TerrainLoader.envelope.z - TerrainLoader.ORIGIN.z // - ORIGIN.z
+//
+//        //530396.1531120539875701,4741497.4489337503910065 : 548661.3891702779801562,4759106.2870445996522903
+//        return heightMapToModel(chunk.heights, scale,
+//                Vector3f(x, 0f, z),
+//                Vector3f(25f, 1f, 25f)
+//        )
+//    }
 
-        val scale = when (dist) {
-            in 0f..8666f -> 128
-            in 6666f..16666f -> 64
-            in 16666f..33333f -> 64
-            in 33333f..50000f -> 32
-            in 50000f..63333f -> 32 //8
-            in 63333f..80000f -> 16 //4
-            else -> 16 // 2
-        }
-
-        val x = chunk.posX + TerrainLoader.envelope.x - TerrainLoader.ORIGIN.x // - ORIGIN.x
-        val z = chunk.posY + TerrainLoader.envelope.z - TerrainLoader.ORIGIN.z // - ORIGIN.z
-
-        //530396.1531120539875701,4741497.4489337503910065 : 548661.3891702779801562,4759106.2870445996522903
-        return heightMapToModel(chunk.heights, scale,
-                Vector3f(x, 0f, z),
-                Vector3f(chunk.scale, 1f, chunk.scale)
-        )
-    }
-
-    fun heightMapToModel(map: HeightMap, quality: Int, offset: Vector3f, scale: Vector3f): Geometry {
-
-        val low = Vector3f(0f, 1f, 0f)
-        val high = Vector3f(0x22 / 255f, 0x20 / 255f, 0x1E / 255f)
-        val blue = Vector3f(0f, 0.5f, 1f)
-
-        val size = quality * quality * 6 * 3
-        val vertexData = FloatArray(size)
-        val colorData = FloatArray(size)
-        var ptr = 0
-        var ptr2 = 0
-
-        val iterSize = min(quality, min(map.width - 1, map.height - 1))
-
-        fun append(i: Int, j: Int) {
-            val mapX = i * (map.width - 1) / iterSize
-            val mapY = j * (map.height - 1) / iterSize
-            val height = map[mapX, mapY]
-
-            vertexData[ptr++] = offset.x + (scale.x * i / iterSize)
-            vertexData[ptr++] = offset.y + scale.y * height
-            vertexData[ptr++] = offset.z + (scale.z * j / iterSize)
-
-            val color = if (height == 0f) blue else Vector3f(low).lerp(high, (height / 2000) * 2.0f)
-            colorData[ptr2++] = color.x
-            colorData[ptr2++] = color.y
-            colorData[ptr2++] = color.z
-        }
-
-        for (i in 0 until iterSize) {
-            for (j in 0 until iterSize) {
-                append(i, j)
-                append(i, j + 1)
-                append(i + 1, j + 1)
-
-                append(i, j)
-                append(i + 1, j + 1)
-                append(i + 1, j)
-            }
-        }
-        return Geometry(listOf(
-                Defs.BufferAttribute("position", vertexData, 3),
-                Defs.BufferAttribute("color", colorData, 3)
-        ))
-    }
+//    fun heightMapToModel(map: HeightMap, quality: Int, offset: Vector3f, scale: Vector3f): Geometry {
+//
+//        val low = Vector3f(0f, 1f, 0f)
+//        val high = Vector3f(0x22 / 255f, 0x20 / 255f, 0x1E / 255f)
+//        val blue = Vector3f(0f, 0.5f, 1f)
+//
+//        val size = quality * quality * 6 * 3
+//        val vertexData = FloatArray(size)
+//        val colorData = FloatArray(size)
+//        var ptr = 0
+//        var ptr2 = 0
+//
+//        val iterSize = min(quality, min(map.width - 1, map.height - 1))
+//
+//        fun append(i: Int, j: Int) {
+//            val mapX = i * (map.width - 1) / iterSize
+//            val mapY = j * (map.height - 1) / iterSize
+//            val height = map[mapX, mapY]
+//
+//            vertexData[ptr++] = offset.x + (scale.x * i / iterSize)
+//            vertexData[ptr++] = offset.y + scale.y * height
+//            vertexData[ptr++] = offset.z + (scale.z * j / iterSize)
+//
+//            val color = if (height == 0f) blue else Vector3f(low).lerp(high, (height / 2000) * 2.0f)
+//            colorData[ptr2++] = color.x
+//            colorData[ptr2++] = color.y
+//            colorData[ptr2++] = color.z
+//        }
+//
+//        for (i in 0 until iterSize) {
+//            for (j in 0 until iterSize) {
+//                append(i, j)
+//                append(i, j + 1)
+//                append(i + 1, j + 1)
+//
+//                append(i, j)
+//                append(i + 1, j + 1)
+//                append(i + 1, j)
+//            }
+//        }
+//        return Geometry(listOf(
+//                Defs.BufferAttribute("position", vertexData, 3),
+//                Defs.BufferAttribute("color", colorData, 3)
+//        ))
+//    }
 }

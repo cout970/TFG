@@ -1,6 +1,5 @@
 package com.cout970.server.rest
 
-import com.cout970.server.terrain.TerrainLoader.terrainLevel
 import com.cout970.server.util.debug
 import com.google.gson.GsonBuilder
 import com.google.gson.stream.JsonWriter
@@ -30,14 +29,6 @@ object Rest {
             // web index
             get("/") {
                 File("core-js/web/index.html").readText()
-            }
-
-            // terrain
-            get("/api/height/:x/:y") {
-                val (x, y) = parseVector2(request)
-                val map = terrainLevel[x to y] ?: return@get "{ \"error\": \"No map\" }"
-
-                gson.toJson(map.cache)
             }
 
             // web
