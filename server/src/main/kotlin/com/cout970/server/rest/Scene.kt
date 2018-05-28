@@ -2,7 +2,9 @@ package com.cout970.server.rest
 
 import org.joml.Vector2f
 import org.joml.Vector3f
+import org.joml.Vector4f
 
+typealias Vector4 = Vector4f
 typealias Vector3 = Vector3f
 typealias Vector2 = Vector2f
 typealias Polygon3d = eu.printingin3d.javascad.vrl.Polygon

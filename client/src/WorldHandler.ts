@@ -29,17 +29,8 @@ export class WorldHandler {
         loader.load(
             `api/scene/${id}`,
             function (gltf) {
-                let obj = gltf.scene.children[0]
-                let mesh = obj.children[0]
-                let geometry = mesh.geometry
-                // let indices: BufferAttribute = geometry.index
 
-
-                // console.log(indices.getX(0))
-                // indices.setX(0, 5)
-
-
-                console.log(geometry)
+                console.log(gltf)
                 // console.log(gltf.scene.userData)
                 Environment.scene.add(gltf.scene)
                 console.log(`[Scene('${id}')] done`);
