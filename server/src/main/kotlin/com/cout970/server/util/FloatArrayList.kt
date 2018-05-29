@@ -1,4 +1,4 @@
-package com.cout970.server.util.collections
+package com.cout970.server.util
 
 import java.util.*
 
@@ -6,12 +6,18 @@ import java.util.*
  * Created by cout970 on 2017/05/17.
  */
 
-fun listOf(vararg values: Float) = FloatArrayList(values)
+fun listOf(vararg values: Float) = FloatArrayList(values).apply { size = values.size }
+
+fun FloatArray.toList(): FloatArrayList {
+    val list = FloatArrayList(size)
+    for (item in this) list.add(item)
+    return list
+}
 
 class FloatArrayList internal constructor(private var array: FloatArray) : MutableList<Float>, RandomAccess {
 
     override var size: Int = 0
-        private set
+        internal set
     private var modCount = 0
 
     constructor(capacity: Int = 10) : this(FloatArray(capacity))

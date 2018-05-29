@@ -1,7 +1,10 @@
 package com.cout970.server.rest
 
 import com.cout970.server.glTF.GLTF_GSON
-import com.cout970.server.util.SceneBaker
+import com.cout970.server.scene.DScene
+import com.cout970.server.scene.SCENE_GSON
+import com.cout970.server.scene.SceneBaker
+import com.cout970.server.scene.scene
 import com.cout970.server.util.debug
 import com.cout970.server.util.info
 import com.google.gson.GsonBuilder
@@ -94,6 +97,8 @@ object Rest {
 
     fun registerScene(scene: DScene): String {
         val name = UUID.randomUUID().toString()
+        info("Registering scene: $name")
+
         val (header, buffer) = SceneBaker.bake(scene, "$name.bin")
 
         File("files/$name.gltf").writeText(GLTF_GSON.toJson(header))
@@ -101,6 +106,11 @@ object Rest {
 
         sceneRegistry[name] = "$name.gltf"
         saveScenes()
+
+        info("Scene registered: " +
+                "header size = ${Math.ceil(File("files/$name.gltf").length() / 1000.0)}kB, " +
+                "binary size = ${Math.ceil(File("files/$name.bin").length() / 1000.0)}kB")
+
         return name
     }
 

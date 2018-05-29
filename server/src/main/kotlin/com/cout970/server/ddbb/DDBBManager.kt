@@ -2,7 +2,7 @@ package com.cout970.server.ddbb
 
 import com.cout970.server.Config
 import com.cout970.server.glTF.Vector2
-import com.cout970.server.rest.DPolygon
+import com.cout970.server.scene.DPolygon
 import com.cout970.server.terrain.TerrainLoader
 import com.cout970.server.util.info
 import com.cout970.server.util.relativize

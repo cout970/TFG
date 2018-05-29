@@ -1,6 +1,6 @@
 package com.cout970.server.glTF
 
-import com.cout970.server.rest.DColor
+import com.cout970.server.scene.DColor
 import com.google.gson.*
 import com.google.gson.reflect.TypeToken
 import org.joml.Quaternionf

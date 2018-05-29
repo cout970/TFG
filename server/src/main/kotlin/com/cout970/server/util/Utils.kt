@@ -1,26 +1,9 @@
 package com.cout970.server.util
 
 import com.cout970.server.glTF.Vector2
-import com.cout970.server.rest.*
+import com.cout970.server.scene.*
 import com.cout970.server.terrain.TerrainLoader
 import eu.printingin3d.javascad.coords.Coords3d
-
-
-inline fun (() -> Unit).ifFail(func: () -> Unit) {
-    try {
-        this()
-    } catch (e: Exception) {
-        e.printStackTrace()
-        func()
-    }
-}
-
-fun earthToScene(pos: Pair<Float, Float>): Pair<Float, Float> {
-    val minX = TerrainLoader.ORIGIN.x
-    val minY = TerrainLoader.ORIGIN.z
-
-    return -(pos.first - minX) to (pos.second - minY)
-}
 
 fun DBufferGeometry.merge(other: DBufferGeometry): DBufferGeometry {
     val attrMap = mutableMapOf<String, BufferAttribute>()
@@ -68,47 +51,14 @@ fun List<Coords3d>.center(): Coords3d {
     )
 }
 
-//fun BakedShape.merge(other: BakedShape): BakedShape {
-//    val geometry = this.model.geometry.merge(other.model.geometry)
-//    return BakedShape(Model(geometry, this.model.material))
-//}
-
-//fun BakedShape.merge(other: BakedShape): BakedShape {
-//    val map = mutableMapOf<DMaterial, List<String>>()
-//
-//    other.models.forEach { map += it.first to it.second }
-//
-//    models.forEach { (key, list) ->
-//        if (key !in map) {
-//            map += key to list
-//        } else {
-//            map[key] = (map[key]!!) + list
-//        }
-//    }
-//
-//    val res = map.mapValues {
-//        listOf(it.value.reduce { acc, s ->
-//            val newStr = UUID.randomUUID().toString()
-//
-//            val a = Rest.cacheMap.remove(acc)!!
-//            val b = Rest.cacheMap.remove(s)!!
-//
-//            Rest.cacheMap[newStr] = a + b
-//            newStr
-//        })
-//    }.toList()
-//
-//    return BakedShape(res)
-//}
-
 fun areaOf(rangeX: IntRange, rangeY: IntRange): Sequence<Pair<Int, Int>> {
     return rangeX.asSequence().flatMap { x -> rangeY.asSequence().map { y -> x to y } }
 }
 
 fun List<DPolygon>.toGeometry(): DGeometry {
-    val coords = flatMap { it.triangles() }.flatMap { listOf(it.x, 1f, it.y) }
+    val coords = flatMap { it.triangles() }.flatMap { listOf(it.x, 0f, it.y) }
 
-    return MeshBuilder.buildGeometry(coords)
+    return GeometryBuilder.build(coords)
 }
 
 fun DArea.toSQL(): String {

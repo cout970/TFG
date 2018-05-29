@@ -1,13 +1,12 @@
-package com.cout970.server.util
+package com.cout970.server.scene
 
 import com.cout970.server.ddbb.DDBBManager
 import com.cout970.server.glTF.GLTFBuilder
 import com.cout970.server.glTF.Vector2
 import com.cout970.server.glTF.Vector3
 import com.cout970.server.glTF.gltfModel
-import com.cout970.server.rest.*
 import com.cout970.server.terrain.TerrainLoader
-import com.cout970.server.util.collections.FloatArrayList
+import com.cout970.server.util.*
 import eu.printingin3d.javascad.basic.Angle
 import eu.printingin3d.javascad.coords.Coords3d
 import eu.printingin3d.javascad.coords.Triangle3d
@@ -25,23 +24,27 @@ object SceneBaker {
     fun bake(scene: DScene, buffer: String) = gltfModel {
         bufferName = buffer
 
-        scene.layers.forEach { layer ->
+        scene {
+            name = scene.title
 
-            scene {
-                name = layer.name
+            scene.layers.forEach { layer ->
 
-                layer.rules.forEachIndexed { index, rule ->
+                node {
+                    name = layer.name
 
-                    node {
-                        name = "rule $index"
+                    layer.rules.forEachIndexed { index, rule ->
 
-                        val models = rule.shapes.flatMap { getShapes(it).map { bakeShape(it) }.simplify() }
+                        node {
+                            name = "rule $index"
 
-                        models.forEachIndexed { index, model ->
+                            val models = rule.shapes.flatMap { getShapes(it).map { bakeShape(it) }.simplify() }
 
-                            node {
-                                name = "shape $index"
-                                shapeMesh(this, model)
+                            models.forEachIndexed { index, model ->
+
+                                node {
+                                    name = "shape $index"
+                                    shapeMesh(this, model)
+                                }
                             }
                         }
                     }
@@ -72,6 +75,7 @@ object SceneBaker {
         is DInlineShapeSource -> listOf(source.shape)
         is DExtrudedShapeSource -> getShapes(source)
         is DShapeAtPointSource -> getShapes(source)
+        is DPolygonsShapeSource -> getShapes(source)
     }
 
     fun getShapes(source: DExtrudedShapeSource): List<DShape> {
@@ -93,12 +97,26 @@ object SceneBaker {
     fun getShapes(source: DShapeAtPointSource): List<DShape> {
         val geom = getGeometry(source.geometrySource)
         val src = source.points
-        val points: List<Vector2> = DDBBManager.loadPoints(src.geomField, src.geomField, src.area.toSQL())
+        val points = DDBBManager.loadPoints(src.geomField, src.tableName, src.area.toSQL())
 
         return points.map {
             ShapeAtPoint(
                     geometry = geom,
                     point = it,
+                    projection = source.projection,
+                    material = source.material
+            )
+        }
+    }
+
+    fun getShapes(source: DPolygonsShapeSource): List<DShape> {
+        val src = source.geometrySource
+        val polys = DDBBManager.loadPolygons(src.geomField, src.tableName, src.area.toSQL())
+
+        return polys.map {
+            ShapeAtPoint(
+                    geometry = it.polygons.toGeometry(),
+                    point = Vector2(),
                     projection = source.projection,
                     material = source.material
             )
@@ -224,6 +242,7 @@ object SceneBaker {
         is DPolygonsSource -> getGeometry(source)
         is DExtrudedPolygonsSource -> getGeometry(source)
         is DInlineSource -> source.geometry
+        is DFileSource -> TODO()
     }
 
     private fun getGeometry(src: DPolygonsSource): DGeometry {
@@ -249,6 +268,8 @@ object SceneBaker {
             rotate(rotation.angle, rotation.axis)
             scale(scale)
         }
+
+        if(matrix == Matrix4f()) return this
 
         val newAttributes = attributes.map { attr ->
             if (attr.attributeName != "position") return@map attr
@@ -316,8 +337,8 @@ object SceneBaker {
                 var max = Float.MIN_VALUE
 
                 points.indices.windowed(3, 3).forEach { i ->
-                    val xPos = points[i[0]] // + TerrainLoader.ORIGIN.x
-                    val zPos = points[i[2]] // + TerrainLoader.ORIGIN.z
+                    val xPos = points[i[0]]
+                    val zPos = points[i[2]]
 
                     val h = TerrainLoader.getHeight(xPos, zPos)
                     min = Math.min(min, h)
@@ -337,10 +358,10 @@ object SceneBaker {
             }
             is SnapProjection -> {
                 points.indices.windowed(3, 3).forEach { i ->
-                    val xPos = points[i[0]] //+ TerrainLoader.ORIGIN.x
-                    val zPos = points[i[2]] //+ TerrainLoader.ORIGIN.z
+                    val xPos = points[i[0]]
+                    val zPos = points[i[2]]
 
-                    points[i[1]] += TerrainLoader.getHeight(xPos, zPos)
+                    points[i[1]] += TerrainLoader.getHeight(xPos, zPos) + projection.elevation
                 }
             }
             is BridgeGroundProjection -> TODO("")

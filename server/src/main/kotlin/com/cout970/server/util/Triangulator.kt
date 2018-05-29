@@ -2,9 +2,9 @@ package com.cout970.server.util
 
 import com.cout970.server.glTF.Vector2
 import com.cout970.server.glTF.Vector3
-import com.cout970.server.rest.DPolygon
-import com.cout970.server.rest.Polygon3d
-import com.cout970.server.rest.Triangle2d
+import com.cout970.server.scene.DPolygon
+import com.cout970.server.scene.Polygon3d
+import com.cout970.server.scene.Triangle2d
 import eu.printingin3d.javascad.coords.Coords3d
 import eu.printingin3d.javascad.coords.Triangle3d
 import eu.printingin3d.javascad.coords2d.Coords2d

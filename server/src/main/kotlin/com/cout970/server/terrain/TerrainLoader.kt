@@ -1,9 +1,6 @@
 package com.cout970.server.terrain
 
 import com.cout970.server.glTF.Vector2
-import com.cout970.server.rest.Chunk
-import com.cout970.server.rest.HeightMap
-import com.cout970.server.rest.heightMapOfSize
 import com.cout970.server.util.areaOf
 import com.cout970.server.util.info
 import com.cout970.server.util.upTo

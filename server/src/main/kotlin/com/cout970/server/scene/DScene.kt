@@ -1,4 +1,4 @@
-package com.cout970.server.rest
+package com.cout970.server.scene
 
 import com.cout970.server.glTF.*
 import com.google.gson.GsonBuilder
@@ -105,6 +105,10 @@ data class DInlineSource(
         val geometry: DGeometry
 ) : DGeometrySource()
 
+data class DFileSource(
+        val file: String
+) : DGeometrySource()
+
 // other DDBB accessors
 
 data class DPointSource(
@@ -173,20 +177,26 @@ sealed class DShapeSource
 
 data class DInlineShapeSource(
         val shape: DShape
-):DShapeSource()
+): DShapeSource()
 
 data class DExtrudedShapeSource(
         val polygonsSource: DExtrudedPolygonsSource,
         val material: DMaterial,
         val projection: DGroundProjection
-):DShapeSource()
+): DShapeSource()
 
 data class DShapeAtPointSource(
         val geometrySource: DGeometrySource,
         val points: DPointSource,
         val material: DMaterial,
         val projection: DGroundProjection
-):DShapeSource()
+): DShapeSource()
+
+data class DPolygonsShapeSource(
+        val geometrySource: DPolygonsSource,
+        val material: DMaterial,
+        val projection: DGroundProjection
+): DShapeSource()
 
 // Layers and render rules
 
@@ -232,8 +242,8 @@ data class DViewPoint(
 data class DScene(
         val title: String,
         val abstract: String,
-        val viewPoints: List<DViewPoint>,
         val origin: Vector2,
         val ground: DGround,
+        val viewPoints: List<DViewPoint>,
         val layers: List<DLayer>
 )
