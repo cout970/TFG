@@ -46,14 +46,13 @@ fun createDemoScene(): DScene {
                     tableName = "centros de enseñanza (polígono)",
                     area = area
             ),
-            height = 50f,
+            height = 25f,
             material = DMaterial(
                     ambientIntensity = 0.5f,
-                    shininess = 0f,
-                    diffuseColor = colorFromHue(240.1f / 360f),
+                    shininess = 0.0f,
+                    diffuseColor = colorFromHue(180f / 360f),
                     emissiveColor = DColor(0f, 0f, 0f),
-                    specularColor = DColor(1f, 1f, 1f),
-                    transparency = 0.05f
+                    transparency = 0.65f
             ),
             projection = DefaultGroundProjection(0f, false)
     )
@@ -69,7 +68,6 @@ fun createDemoScene(): DScene {
                     shininess = 0f,
                     diffuseColor = DColor(0f, 0.5f, 0f),
                     emissiveColor = DColor(0f, 0f, 0f),
-                    specularColor = DColor(1f, 1f, 1f),
                     transparency = 0f
             ),
             projection = DefaultGroundProjection(0f, false)
@@ -83,27 +81,26 @@ fun createDemoScene(): DScene {
                     shininess = 0f,
                     diffuseColor = DColor(1f, 1f, 0.0f),
                     emissiveColor = DColor(0.1f, 0.1f, 0.1f),
-                    specularColor = DColor(.1f, 1f, 1f),
                     transparency = 0f
             ),
             projection = DefaultGroundProjection(0f, false)
     )
 
-    val streets = DPolygonsShapeSource(
-            geometrySource = DPolygonsSource(
+    val streets = DExtrudeShapeSource(
+            polygonsSource = DPolygonsSource(
                     geomField = "geom",
                     tableName = "calles",
                     area = area
             ),
+            height = 5f,
             material = DMaterial(
                     ambientIntensity = 0.5f,
                     shininess = 0f,
                     diffuseColor = colorFromHue(63.1f / 360f),
                     emissiveColor = DColor(0f, 0f, 0f),
-                    specularColor = DColor(1f, 1f, 1f),
                     transparency = 0f
             ),
-            projection = SnapProjection(0.5f)
+            projection = SnapProjection(1.0f)
     )
 
     val buildings = DExtrudedShapeSource(
@@ -119,7 +116,6 @@ fun createDemoScene(): DScene {
                     shininess = 0f,
                     diffuseColor = colorFromHue(273.1f / 360f),
                     emissiveColor = DColor(0f, 0f, 0f),
-                    specularColor = DColor(1f, 1f, 1f),
                     transparency = 0f
             ),
             projection = DefaultGroundProjection(1f, false)
@@ -193,7 +189,6 @@ fun createDemoScene(): DScene {
                     shininess = 0f,
                     diffuseColor = DColor(0.0f, 1.0f, 0.0f),
                     emissiveColor = DColor(0f, 0f, 0f),
-                    specularColor = DColor(0f, 0f, 0f),
                     transparency = 0.0f
             ),
             area = area,

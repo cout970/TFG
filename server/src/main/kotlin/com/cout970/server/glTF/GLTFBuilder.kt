@@ -188,6 +188,7 @@ class GLTFBuilder {
     private val asset = Asset()
 
     private val scenes = mutableListOf<Scene>()
+    private val bakedMaterials = mutableListOf<GltfMaterial>()
     private val bakedNodes = mutableListOf<GltfNode>()
     private val bakedMeshes = mutableListOf<GltfMesh>()
     private var buffer = ByteBuffer.allocate(16).order(ByteOrder.LITTLE_ENDIAN)
@@ -215,7 +216,8 @@ class GLTFBuilder {
                 accessors = bakedAccessors,
                 scene = 0,
                 scenes = scenes,
-                buffers = listOf(GltfBuffer(uri = bufferName, byteLength = binary.size))
+                buffers = listOf(GltfBuffer(uri = bufferName, byteLength = binary.size)),
+                materials = bakedMaterials
         ) to binary
     }
 
@@ -348,7 +350,7 @@ class GLTFBuilder {
     data class Primitive(
             val attributes: MutableMap<String, UnpackedBuffer> = mutableMapOf(),
             var indices: UnpackedBuffer? = null,
-//            val material: Int? = null,
+            var material: Material? = null,
             var mode: GltfMode = GltfMode.TRIANGLES,
             val targets: MutableMap<String, Int> = mutableMapOf()
     ) {
@@ -403,11 +405,37 @@ class GLTFBuilder {
     }
 
     fun Primitive.build(): GltfPrimitive {
+
+        val mat = material?.build()
+        var matIndex: Int? = null
+        if (mat != null) {
+            matIndex = bakedMaterials.size
+            bakedMaterials.add(mat)
+        }
+
         return GltfPrimitive(
                 attributes = attributes.mapValues { it.value.build() },
                 indices = indices?.build(),
+                material = matIndex,
                 mode = mode.code,
                 targets = targets
+        )
+    }
+
+    fun Primitive.material(func: Material.() -> Unit) {
+        material = Material().apply(func)
+    }
+
+    fun Material.build(): GltfMaterial {
+        return GltfMaterial(
+                pbrMetallicRoughness = pbrMetallicRoughness,
+                normalTexture = normalTexture,
+                occlusionTexture = occlusionTexture,
+                emissiveTexture = emissiveTexture,
+                emissiveFactor = emissiveFactor,
+                alphaMode = alphaMode,
+                alphaCutoff = alphaCutoff,
+                doubleSided = doubleSided
         )
     }
 
@@ -429,7 +457,7 @@ class GLTFBuilder {
                 byteLength = size,
                 byteOffset = buffer.position(),
                 byteStride = null,
-                target = if(indices) 34963 else 34962
+                target = if (indices) 34963 else 34962
         )
         val accessor = GltfAccessor(
                 bufferView = index,
@@ -483,13 +511,22 @@ class GLTFBuilder {
         return ByteBuffer.allocate(newSize).put(this).order(ByteOrder.LITTLE_ENDIAN)
     }
 
+    data class Material(
+            var pbrMetallicRoughness: GltfPbrMetallicRoughness? = null,
+            var normalTexture: GltfNormalTextureInfo? = null,
+            var occlusionTexture: GltfOcclusionTextureInfo? = null,
+            var emissiveTexture: GltfTextureInfo? = null,
+            var emissiveFactor: Vector3 = Vector3(),
+            var alphaMode: GltfAlphaMode = GltfAlphaMode.OPAQUE,
+            var alphaCutoff: Double = 0.5,
+            var doubleSided: Boolean = false
+    )
+
+
 //    val animations: List<Animation> = emptyList(),  // An array of keyframe animations.
 //    val cameras: List<Camera> = emptyList(),  // An array of cameras. A camera defines a projection matrix.
 //    val images: List<Image> = emptyList(),  // An array of images. An image defines data used to create a texture.
-//    val materials: List<Material> = emptyList(),  // An array of materials. A material defines the appearance of a primitive.
 //    val samplers: List<Sampler> = emptyList(),  // An array of samplers. A sampler contains properties for texture filtering and wrapping modes.
-//    val scene: Int? = null,         // The index of the default scene.
-//    val scenes: List<Scene> = emptyList(),  // An array of scenes.
 //    val skins: List<Skin> = emptyList(),  // An array of skins. A skin is defined by joints and matrices.
 //    val textures: List<Texture> = emptyList(),  // An array of textures.
 }

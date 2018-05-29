@@ -1,10 +1,7 @@
 package com.cout970.server.scene
 
 import com.cout970.server.ddbb.DDBBManager
-import com.cout970.server.glTF.GLTFBuilder
-import com.cout970.server.glTF.Vector2
-import com.cout970.server.glTF.Vector3
-import com.cout970.server.glTF.gltfModel
+import com.cout970.server.glTF.*
 import com.cout970.server.terrain.TerrainLoader
 import com.cout970.server.util.*
 import eu.printingin3d.javascad.basic.Angle
@@ -31,19 +28,20 @@ object SceneBaker {
             node {
                 name = "terrain"
 
-//                DMaterial(
-//                        ambientIntensity = 0.0f,
-//                        shininess = 0f,
-//                        diffuseColor = DColor(0.0f, 1.0f, 0.0f),
-//                        emissiveColor = DColor(0f, 0f, 0f),
-//                        specularColor = DColor(0f, 0f, 0f),
-//                        transparency = 0.0f
-//                )
 
                 mesh {
 
-                    val mesh = generateTerrainMesh(scene.origin, scene.ground.area, scene.ground.gridSize)
-                    setGeometry(this, mesh.project(SnapProjection(0f)))
+                    val material = DMaterial(
+                            ambientIntensity = 0.0f,
+                            shininess = 0f,
+                            diffuseColor = DColor(0.0f, 1.0f, 0.0f),
+                            emissiveColor = DColor(0f, 0f, 0f),
+                            transparency = 0.0f
+                    )
+                    val geom = generateTerrainMesh(scene.origin, scene.ground.area, scene.ground.gridSize)
+                            .project(SnapProjection(0f))
+
+                    setGeometry(this, geom, material)
                 }
             }
 
@@ -76,13 +74,11 @@ object SceneBaker {
     private fun GLTFBuilder.shapeMesh(node: GLTFBuilder.Node, model: Model) = node.apply {
         mesh {
 
-            val geom = model.geometry
-
-            setGeometry(this, geom)
+            setGeometry(this, model.geometry, model.material)
         }
     }
 
-    private fun GLTFBuilder.setGeometry(mesh: GLTFBuilder.Mesh, geom: DBufferGeometry) = mesh.apply {
+    private fun GLTFBuilder.setGeometry(mesh: GLTFBuilder.Mesh, geom: DBufferGeometry, mat: DMaterial) = mesh.apply {
         primitive {
 
             val data: FloatArray = geom.attributes[0].data
@@ -97,6 +93,18 @@ object SceneBaker {
             }
 
             attributes[POSITION] = buffer(FLOAT, vertices)
+
+            material {
+                emissiveFactor = mat.emissiveColor.toVector()
+                alphaMode = if (mat.transparency != 0f) GltfAlphaMode.BLEND else GltfAlphaMode.OPAQUE
+                doubleSided = false
+
+                pbrMetallicRoughness = GltfPbrMetallicRoughness(
+                        baseColorFactor = Vector4f(mat.diffuseColor.r, mat.diffuseColor.g, mat.diffuseColor.b, 1f - mat.transparency),
+                        metallicFactor = 0.0,
+                        roughnessFactor = 1.0 - mat.shininess
+                )
+            }
         }
     }
 
@@ -208,7 +216,6 @@ object SceneBaker {
                             diffuseColor = DColor(1f, 1f, 1f),
                             emissiveColor = DColor(0f, 0f, 0f),
                             shininess = 1f,
-                            specularColor = DColor(0.5f, 0.5f, 0.5f),
                             transparency = 0f
                     ),
                     geometry = Cube(10.0).toGeometry().bake()

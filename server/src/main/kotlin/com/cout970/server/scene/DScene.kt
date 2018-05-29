@@ -57,7 +57,6 @@ data class DMaterial(
         val shininess: Float,
         val diffuseColor: DColor,
         val emissiveColor: DColor,
-        val specularColor: DColor,
         val transparency: Float
 )
 
@@ -237,6 +236,7 @@ data class DLabel(
 )
 
 // Ground elevation files
+
 data class DGround(
         val file: String,
         val material: DMaterial,
