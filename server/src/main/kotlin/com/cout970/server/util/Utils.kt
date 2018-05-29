@@ -1,10 +1,9 @@
 package com.cout970.server.util
 
+import com.cout970.server.glTF.Vector2
 import com.cout970.server.rest.*
-import com.cout970.server.rest.DShape.BakedShape
 import com.cout970.server.terrain.TerrainLoader
 import eu.printingin3d.javascad.coords.Coords3d
-import java.util.*
 
 
 inline fun (() -> Unit).ifFail(func: () -> Unit) {
@@ -23,7 +22,7 @@ fun earthToScene(pos: Pair<Float, Float>): Pair<Float, Float> {
     return -(pos.first - minX) to (pos.second - minY)
 }
 
-fun DGeometry.merge(other: DGeometry): DGeometry {
+fun DBufferGeometry.merge(other: DBufferGeometry): DBufferGeometry {
     val attrMap = mutableMapOf<String, BufferAttribute>()
 
     attributes.forEach {
@@ -38,7 +37,7 @@ fun DGeometry.merge(other: DGeometry): DGeometry {
         }
     }
 
-    return DGeometry(attrMap.values.toList())
+    return DBufferGeometry(attrMap.values.toList())
 }
 
 fun BufferAttribute.merge(other: BufferAttribute): BufferAttribute {
@@ -74,33 +73,33 @@ fun List<Coords3d>.center(): Coords3d {
 //    return BakedShape(Model(geometry, this.model.material))
 //}
 
-fun BakedShape.merge(other: BakedShape): BakedShape {
-    val map = mutableMapOf<DMaterial, List<String>>()
-
-    other.models.forEach { map += it.first to it.second }
-
-    models.forEach { (key, list) ->
-        if (key !in map) {
-            map += key to list
-        } else {
-            map[key] = (map[key]!!) + list
-        }
-    }
-
-    val res = map.mapValues {
-        listOf(it.value.reduce { acc, s ->
-            val newStr = UUID.randomUUID().toString()
-
-            val a = Rest.cacheMap.remove(acc)!!
-            val b = Rest.cacheMap.remove(s)!!
-
-            Rest.cacheMap[newStr] = a + b
-            newStr
-        })
-    }.toList()
-
-    return BakedShape(res)
-}
+//fun BakedShape.merge(other: BakedShape): BakedShape {
+//    val map = mutableMapOf<DMaterial, List<String>>()
+//
+//    other.models.forEach { map += it.first to it.second }
+//
+//    models.forEach { (key, list) ->
+//        if (key !in map) {
+//            map += key to list
+//        } else {
+//            map[key] = (map[key]!!) + list
+//        }
+//    }
+//
+//    val res = map.mapValues {
+//        listOf(it.value.reduce { acc, s ->
+//            val newStr = UUID.randomUUID().toString()
+//
+//            val a = Rest.cacheMap.remove(acc)!!
+//            val b = Rest.cacheMap.remove(s)!!
+//
+//            Rest.cacheMap[newStr] = a + b
+//            newStr
+//        })
+//    }.toList()
+//
+//    return BakedShape(res)
+//}
 
 fun areaOf(rangeX: IntRange, rangeY: IntRange): Sequence<Pair<Int, Int>> {
     return rangeX.asSequence().flatMap { x -> rangeY.asSequence().map { y -> x to y } }
@@ -110,6 +109,15 @@ fun List<DPolygon>.toGeometry(): DGeometry {
     val coords = flatMap { it.triangles() }.flatMap { listOf(it.x, 1f, it.y) }
 
     return MeshBuilder.buildGeometry(coords)
+}
+
+fun DArea.toSQL(): String {
+    val minX = pos.x
+    val minY = pos.y
+    val maxX = pos.x + size.x
+    val maxY = pos.y + size.y
+
+    return "ST_GeomFromText('POLYGON(($minX $minY,$minX $maxY,$maxX $maxY,$maxX $minY,$minX $minY))')"
 }
 
 fun getAreaString(pos: Pair<Int, Int>): String {

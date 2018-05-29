@@ -1,28 +1,29 @@
 package com.cout970.server.util
 
+import com.cout970.server.ddbb.DDBBManager
 import com.cout970.server.glTF.GLTFBuilder
+import com.cout970.server.glTF.Vector2
+import com.cout970.server.glTF.Vector3
 import com.cout970.server.glTF.gltfModel
 import com.cout970.server.rest.*
-import com.cout970.server.rest.DGroundProjection.*
-import com.cout970.server.rest.DShape.BakedShape
 import com.cout970.server.terrain.TerrainLoader
 import com.cout970.server.util.collections.FloatArrayList
 import eu.printingin3d.javascad.basic.Angle
 import eu.printingin3d.javascad.coords.Coords3d
 import eu.printingin3d.javascad.coords.Triangle3d
 import eu.printingin3d.javascad.coords2d.Coords2d
+import eu.printingin3d.javascad.models.Cube
 import eu.printingin3d.javascad.models.LinearExtrude
 import eu.printingin3d.javascad.models2d.Polygon
 import eu.printingin3d.javascad.vrl.FacetGenerationContext
 import org.joml.Matrix4f
 import org.joml.Vector4f
-import java.util.*
 import kotlin.math.sqrt
 
 object SceneBaker {
 
-    fun bake2(scene: DScene) = gltfModel {
-        bufferName = UUID.randomUUID().toString() + ".bin"
+    fun bake(scene: DScene, buffer: String) = gltfModel {
+        bufferName = buffer
 
         scene.layers.forEach { layer ->
 
@@ -34,11 +35,13 @@ object SceneBaker {
                     node {
                         name = "rule $index"
 
-                        rule.shapes.forEachIndexed { index, shape ->
+                        val models = rule.shapes.flatMap { getShapes(it).map { bakeShape(it) }.simplify() }
+
+                        models.forEachIndexed { index, model ->
 
                             node {
                                 name = "shape $index"
-                                shapeMesh(this, shape)
+                                shapeMesh(this, model)
                             }
                         }
                     }
@@ -47,108 +50,127 @@ object SceneBaker {
         }
     }
 
-    private fun GLTFBuilder.shapeMesh(node: GLTFBuilder.Node, shape: DShape) = node.apply {
+    private fun GLTFBuilder.shapeMesh(node: GLTFBuilder.Node, model: Model) = node.apply {
         mesh {
-            val baked = bakeShape(shape)
-            baked.models.forEach { (mat, geoms) ->
 
-                // TODO add material
-                geoms.forEach { geom ->
+            // TODO add material
+            val geom = model.geometry
 
-                    primitive {
+            primitive {
 
-                        val data: FloatArray = Rest.cacheMap[geom]!!
-                        val vertices = data.toList().windowed(3, 3).map { Vector3(it[0], it[1], it[2]) }
+                val data: FloatArray = geom.attributes[0].data
+                val vertices = data.toList().windowed(3, 3).map { Vector3(it[0], it[1], it[2]) }
 
-                        attributes[POSITION] = buffer(FLOAT, vertices)
-                    }
-                }
+                attributes[POSITION] = buffer(FLOAT, vertices)
             }
         }
     }
 
-    fun bake(scene: DScene): DScene {
-        val newLayers = scene.layers.map { layer ->
-            val newRules = layer.rules.map { rule ->
-                val newShapes = rule.shapes.mapNotNull { shape ->
-                    try {
-                        bakeShape(shape)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        null
-                    }
-                }
-                rule.copy(shapes = newShapes)
+    // Shape factories
+
+    fun getShapes(source: DShapeSource): List<DShape> = when (source) {
+        is DInlineShapeSource -> listOf(source.shape)
+        is DExtrudedShapeSource -> getShapes(source)
+        is DShapeAtPointSource -> getShapes(source)
+    }
+
+    fun getShapes(source: DExtrudedShapeSource): List<DShape> {
+        val src = source.polygonsSource
+        val geoms = DDBBManager.loadExtrudedPolygons(src.geomField, src.heightField, src.tableName, src.heightScale, src.area.toSQL())
+
+        return geoms.flatMap { epg ->
+            epg.polygons.map { poly ->
+                ExtrudeSurface(
+                        surface = poly,
+                        height = epg.height,
+                        material = source.material,
+                        projection = source.projection
+                )
             }
-            layer.copy(rules = newRules)
         }
-        return scene.copy(layers = newLayers)
     }
 
-    fun bakeShapes(shapes: List<DShape>): BakedShape {
-        return shapes.parallelStream()
-                .map {
-                    try {
-                        Optional.of(SceneBaker.bakeShape(it))
-                    } catch (e: Exception) {
-//                      e.printStackTrace()
-                        Optional.empty<BakedShape>()
-                    }
-                }
-                .filter { it.isPresent }
-                .map { it.get() }
-                .reduce { a: BakedShape, b: BakedShape -> a.merge(b) }
-                .get()
+    fun getShapes(source: DShapeAtPointSource): List<DShape> {
+        val geom = getGeometry(source.geometrySource)
+        val src = source.points
+        val points: List<Vector2> = DDBBManager.loadPoints(src.geomField, src.geomField, src.area.toSQL())
+
+        return points.map {
+            ShapeAtPoint(
+                    geometry = geom,
+                    point = it,
+                    projection = source.projection,
+                    material = source.material
+            )
+        }
     }
 
-    fun bakeShape(shape: DShape): BakedShape = when (shape) {
-        is BakedShape -> shape
-        is DShape.ShapeAtPoint -> bakeShapeAtPoint(shape)
-        is DShape.ShapeAtLine -> bakeShapeAtLine(shape)
-        is DShape.ShapeAtSurface -> bakeShapeAtSurface(shape)
-        is DShape.ExtrudeSurface -> bakeExtrudeShape(shape)
+    // shape baking
+
+    fun bakeShape(shape: DShape): Model {
+        try {
+            return when (shape) {
+                is ShapeAtPoint -> bakeShapeAtPoint(shape)
+                is ShapeAtLine -> bakeShapeAtLine(shape)
+                is ShapeAtSurface -> bakeShapeAtSurface(shape)
+                is ExtrudeSurface -> bakeExtrudeShape(shape)
+            }
+        } catch (e: Exception) {
+
+            return Model(
+                    material = DMaterial(
+                            ambientIntensity = 0.5f,
+                            diffuseColor = DColor(1f, 1f, 1f),
+                            emissiveColor = DColor(0f, 0f, 0f),
+                            shininess = 1f,
+                            specularColor = DColor(0.5f, 0.5f, 0.5f),
+                            transparency = 0f
+                    ),
+                    geometry = Cube(10.0).toGeometry().bake()
+            )
+        }
     }
 
-    private fun bakeShapeAtPoint(shape: DShape.ShapeAtPoint): BakedShape {
-        val model = shape.model
-
-        val newGeometry = model.geometry.transform(
-                translation = shape.position,
-                rotation = shape.rotation,
-                scale = shape.scale,
-                projection = shape.projection
+    private fun bakeShapeAtPoint(shape: ShapeAtPoint): Model {
+        val translation = DTransformGeometry(
+                translation = Vector3(shape.point.x, 0f, shape.point.y),
+                source = shape.geometry
         )
+        val newGeometry = translation.bake().project(shape.projection)
 
-        return saveInCache(newGeometry, model.material)
+        return Model(newGeometry, shape.material)
     }
 
-    private fun bakeShapeAtLine(shape: DShape.ShapeAtLine): BakedShape {
+    private fun bakeShapeAtLine(shape: ShapeAtLine): Model {
+        val geometry = shape.geometry.bake()
+
         val direction = (shape.lineEnd - shape.lineStart).normalize()
         val start = shape.lineStart + (direction * shape.initialGap)
 
         val line = shape.lineEnd - start
         val numPoints = sqrt(line.x * line.x + line.z * line.z).toInt()
 
-        val geometries = mutableListOf<DGeometry>()
+        val geometries = mutableListOf<DBufferGeometry>()
 
         repeat(numPoints) { i ->
             val point2d = start + (direction * shape.gap * i.toFloat())
 
-            geometries += shape.model.geometry.transform(
+            val translation = DTransformGeometry(
                     translation = point2d,
-                    rotation = shape.rotation,
-                    scale = shape.scale,
-                    projection = shape.projection
+                    source = geometry
             )
+            geometries += translation.bake().project(shape.projection)
         }
 
-        val newGeometry = geometries.reduce { acc, geometry -> acc.merge(geometry) }
-        return saveInCache(newGeometry, shape.model.material)
+        val newGeometry = geometries.reduce { acc, geom -> acc.merge(geom) }
+        return Model(newGeometry, shape.material)
     }
 
-    private fun bakeShapeAtSurface(shape: DShape.ShapeAtSurface): BakedShape {
+    private fun bakeShapeAtSurface(shape: ShapeAtSurface): Model {
+        val geometry = shape.geometry.bake()
+
         val locations = mutableListOf<Vector2>()
-        val geometries = mutableListOf<DGeometry>()
+        val geometries = mutableListOf<DBufferGeometry>()
 
         val triangles = Triangulator.triangulate(shape.surface)
 
@@ -174,27 +196,102 @@ object SceneBaker {
         }
 
         locations.forEach { point2d ->
-            geometries += shape.model.geometry.transform(
+            val translation = DTransformGeometry(
                     translation = Vector3(point2d.x, 0f, point2d.y),
-                    rotation = shape.rotation,
-                    scale = shape.scale,
-                    projection = shape.projection
+                    source = geometry
             )
+            geometries += translation.bake().project(shape.projection)
         }
 
-        val newGeometry = geometries.reduce { acc, geometry -> acc.merge(geometry) }
-        return saveInCache(newGeometry, shape.model.material)
+        val newGeometry = geometries.reduce { acc, geom -> acc.merge(geom) }
+        return Model(newGeometry, shape.material)
     }
 
-    private fun bakeExtrudeShape(shape: DShape.ExtrudeSurface): BakedShape {
-        require(shape.surface.points.size >= 3) {
-            "Polygon must have at least 3 points, it had ${shape.surface.points.size} instead"
+    private fun bakeExtrudeShape(shape: ExtrudeSurface): Model {
+        val surface = shape.surface
+        require(surface.points.size >= 3) {
+            "Polygon must have at least 3 points, it had ${surface.points.size} instead"
         }
 
-        val coords = shape.surface.points.map { Coords2d(it.x.toDouble(), it.y.toDouble()) }
-        val polygon = Polygon(coords)
-        val height = shape.height.toDouble()
-        val model = LinearExtrude(polygon, height, Angle.ZERO, 1.0)
+        val newGeometry = extrude(surface, shape.height).bake().project(projection = shape.projection)
+
+        return Model(newGeometry, shape.material)
+    }
+
+    // Geometry accessors
+
+    private fun getGeometry(source: DGeometrySource): DGeometry = when (source) {
+        is DPolygonsSource -> getGeometry(source)
+        is DExtrudedPolygonsSource -> getGeometry(source)
+        is DInlineSource -> source.geometry
+    }
+
+    private fun getGeometry(src: DPolygonsSource): DGeometry {
+        val polys = DDBBManager.loadPolygons(src.geomField, src.tableName, src.area.toSQL())
+        return polys.flatMap { it.polygons }.toGeometry()
+    }
+
+    private fun getGeometry(src: DExtrudedPolygonsSource): DGeometry {
+        val geoms = DDBBManager.loadExtrudedPolygons(src.geomField, src.heightField, src.tableName, src.heightScale, src.area.toSQL())
+        return geoms.flatMap { it.polygons }.toGeometry()
+    }
+
+    // Geometry baking
+
+    private fun DGeometry.bake(): DBufferGeometry = when (this) {
+        is DBufferGeometry -> this
+        is DTransformGeometry -> this.source.bake().transform(this.translation, this.rotation, this.scale)
+    }
+
+    private fun DBufferGeometry.transform(translation: Vector3, rotation: DRotation, scale: Vector3): DBufferGeometry {
+        val matrix = Matrix4f().apply {
+            translate(translation)
+            rotate(rotation.angle, rotation.axis)
+            scale(scale)
+        }
+
+        val newAttributes = attributes.map { attr ->
+            if (attr.attributeName != "position") return@map attr
+
+            val data = expandTriangles(attr.data)
+
+            val newData = FloatArray(data.size)
+            val input = Vector4f(0f, 0f, 0f, 1f)
+            val output = Vector4f(0f, 0f, 0f, 1f)
+
+            repeat(data.size / 3) { i ->
+                input.x = data[i * 3]
+                input.y = data[i * 3 + 1]
+                input.z = data[i * 3 + 2]
+
+                matrix.transform(input, output)
+
+                newData[i * 3] = output.x
+                newData[i * 3 + 1] = output.y
+                newData[i * 3 + 2] = output.z
+            }
+
+            attr.copy(data = newData)
+        }
+
+        return copy(attributes = newAttributes)
+    }
+
+    private fun DBufferGeometry.project(projection: DGroundProjection): DBufferGeometry {
+        val newAttributes = attributes.map { attr ->
+            if (attr.attributeName != "position") return@map attr
+
+            attr.copy(data = project(projection, attr.data))
+        }
+
+        return copy(attributes = newAttributes)
+    }
+
+    // utilities
+
+    private fun extrude(polygon: DPolygon, height: Float): DGeometry {
+        val coords = polygon.points.map { Coords2d(it.x.toDouble(), it.y.toDouble()) }
+        val model = LinearExtrude(Polygon(coords), height.toDouble(), Angle.ZERO, 1.0)
 
         val polygons = model.toCSG(FacetGenerationContext.DEFAULT).polygons
 
@@ -208,14 +305,7 @@ object SceneBaker {
             )
         }
 
-        val newGeometry = triangles.toGeometry().transform(
-                translation = Vector3(),
-                rotation = shape.rotation,
-                scale = shape.scale,
-                projection = shape.projection
-        )
-
-        return saveInCache(newGeometry, shape.material)
+        return triangles.toGeometry()
     }
 
     private fun project(projection: DGroundProjection, points: FloatArray): FloatArray {
@@ -271,46 +361,6 @@ object SceneBaker {
         return 0.5f * (-p1.y * p2.x + p0.y * (-p1.x + p2.x) + p0.x * (p1.y - p2.y) + p1.x * p2.y)
     }
 
-    private fun DGeometry.transform(translation: Vector3, rotation: DRotation, scale: Vector3, projection: DGroundProjection): DGeometry {
-        val matrix = Matrix4f().apply {
-            translate(translation)
-            rotate(rotation.angle, rotation.axis)
-            scale(scale)
-        }
-
-        val newAttributes = attributes.map { attr ->
-            if (attr.attributeName != "position") return@map attr
-
-            val data = expandTriangles(attr.data)
-
-            val newData = FloatArray(data.size)
-            val input = Vector4f(0f, 0f, 0f, 1f)
-            val output = Vector4f(0f, 0f, 0f, 1f)
-
-            repeat(data.size / 3) { i ->
-                input.x = data[i * 3]
-                input.y = data[i * 3 + 1]
-                input.z = data[i * 3 + 2]
-
-                matrix.transform(input, output)
-
-                newData[i * 3] = output.x
-                newData[i * 3 + 1] = output.y
-                newData[i * 3 + 2] = output.z
-            }
-
-            attr.copy(data = project(projection, newData))
-        }
-
-        return copy(attributes = newAttributes)
-    }
-
-    private fun saveInCache(newGeometry: DGeometry, material: DMaterial): BakedShape {
-        val str = UUID.randomUUID().toString()
-        Rest.cacheMap[str] = newGeometry.attributes.find { it.attributeName == "position" }?.data!!
-        return BakedShape(listOf(material to listOf(str)))
-    }
-
     private fun expandTriangles(data: FloatArray): FloatArray {
         val list = FloatArrayList()
         val p0 = Vector3()
@@ -342,22 +392,22 @@ object SceneBaker {
 
                 // left-down
                 list.add(p0)
-                list.add(a)
+                list.add(a + Vector3(0f, 100f, 0f))
                 list.add(b)
 
                 //center
                 list.add(a)
-                list.add(c)
+                list.add(c + Vector3(0f, 100f, 0f))
                 list.add(b)
 
                 // right-down
                 list.add(b)
-                list.add(c)
+                list.add(c + Vector3(0f, 100f, 0f))
                 list.add(p2)
 
                 // top
                 list.add(a)
-                list.add(p1)
+                list.add(p1 + Vector3(0f, 100f, 0f))
                 list.add(c)
 
             } else {
@@ -373,5 +423,18 @@ object SceneBaker {
         add(i.x)
         add(i.y)
         add(i.z)
+    }
+
+    private fun List<Model>.simplify(): List<Model> {
+        val map = groupBy { it.material }
+
+        return map.map {
+            val geom = it.value
+                    .parallelStream()
+                    .map { it.geometry }
+                    .reduce { acc, geometry -> acc.merge(geometry) }
+
+            Model(geom.get(), it.key)
+        }
     }
 }

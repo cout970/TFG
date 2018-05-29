@@ -42,15 +42,15 @@ fun main(args: Array<String>) {
 
     System.gc()
 
+    info("Starting: http server")
+    httpServer()
+    info("Done: http server")
+
+    System.gc()
+
     info("Baking scene")
     time = measureTimeMillis {
         bakeScene()
     }
     info("Scene baked ($time ms)")
-
-    System.gc()
-
-    info("Starting: http server")
-    httpServer()
-    info("Done: http server")
 }

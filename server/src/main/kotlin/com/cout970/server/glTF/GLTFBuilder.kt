@@ -1,6 +1,5 @@
 package com.cout970.server.glTF
 
-import com.cout970.server.rest.Vector3
 import com.google.gson.*
 import java.io.File
 import java.lang.reflect.Type
@@ -389,18 +388,18 @@ class GLTFBuilder {
         primitives.add(Primitive().apply(func))
     }
 
-    inline fun <reified T> Primitive.buffer(type: GltfComponentType, data: List<T>): UnpackedBuffer {
+    inline fun <reified T> Primitive.buffer(type: GltfComponentType, data: List<T>, indices: Boolean = false): UnpackedBuffer {
         val container: GltfType = when {
             Number::class.java.isAssignableFrom(T::class.java) -> GltfType.SCALAR
             Vector2::class.java.isAssignableFrom(T::class.java) -> GltfType.VEC2
             Vector3::class.java.isAssignableFrom(T::class.java) -> GltfType.VEC3
             Vector4::class.java.isAssignableFrom(T::class.java) -> GltfType.VEC4
 //            IMatrix2::class.java.isAssignableFrom(T::class.java) -> GltfType.MAT2
-            IMatrix3::class.java.isAssignableFrom(T::class.java) -> GltfType.MAT3
+            Matrix3::class.java.isAssignableFrom(T::class.java) -> GltfType.MAT3
             Matrix4::class.java.isAssignableFrom(T::class.java) -> GltfType.MAT4
             else -> error("Invalid buffer type")
         }
-        return UnpackedBuffer(container, type, data)
+        return UnpackedBuffer(container, type, data, indices)
     }
 
     fun Primitive.build(): GltfPrimitive {
@@ -415,7 +414,8 @@ class GLTFBuilder {
     data class UnpackedBuffer(
             val containerType: GltfType,
             val elementType: GltfComponentType,
-            val data: List<*>
+            val data: List<*>,
+            val indices: Boolean
     )
 
     @Suppress("UNCHECKED_CAST")
@@ -429,7 +429,7 @@ class GLTFBuilder {
                 byteLength = size,
                 byteOffset = buffer.position(),
                 byteStride = null,
-                target = elementType.id
+                target = if(indices) 34963 else 34962
         )
         val accessor = GltfAccessor(
                 bufferView = index,

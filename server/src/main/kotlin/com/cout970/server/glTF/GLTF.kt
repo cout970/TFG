@@ -1,11 +1,9 @@
 package com.cout970.server.glTF
 
-import com.cout970.server.rest.Vector3
-import com.cout970.server.rest.Vector4
 import org.joml.*
 
 typealias Quaternion = Quaternionf
-typealias IMatrix3 = Matrix3f
+typealias Matrix3 = Matrix3f
 typealias Matrix4 = Matrix4f
 typealias Vector2 = Vector2f
 typealias Vector3 = Vector3f

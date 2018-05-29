@@ -1,7 +1,7 @@
 package com.cout970.server.util
 
+import com.cout970.server.glTF.Vector2
 import com.cout970.server.rest.DGeometry
-import com.cout970.server.rest.Vector2
 import eu.printingin3d.javascad.coords.Triangle3d
 import eu.printingin3d.javascad.models.IModel
 import eu.printingin3d.javascad.vrl.FacetGenerationContext

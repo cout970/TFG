@@ -2,19 +2,18 @@ package com.cout970.server.rest
 
 import com.cout970.server.glTF.*
 import com.google.gson.GsonBuilder
-import org.joml.Vector2f
-import org.joml.Vector3f
-import org.joml.Vector4f
 
-typealias Vector4 = Vector4f
-typealias Vector3 = Vector3f
-typealias Vector2 = Vector2f
 typealias Polygon3d = eu.printingin3d.javascad.vrl.Polygon
 
 data class Triangle2d(
         val a: Vector2,
         val b: Vector2,
         val c: Vector2
+)
+
+data class Model(
+        val geometry: DBufferGeometry,
+        val material: DMaterial
 )
 
 val SCENE_GSON = GsonBuilder()
@@ -27,10 +26,11 @@ val SCENE_GSON = GsonBuilder()
         .setPrettyPrinting()
         .create()
 
+
 // TSDL
-// Scene  Definition Language
+// Terrain? Scene Definition Language
 
-
+// Basic Components
 data class DRotation(
         val angle: Float,
         val axis: Vector3
@@ -47,14 +47,9 @@ data class DPolygon(
         val holes: List<List<Vector2>> = emptyList()
 )
 
-data class BufferAttribute(
-        val attributeName: String,
-        val data: FloatArray,
-        val count: Int
-)
-
-data class DGeometry(
-        val attributes: List<BufferAttribute>
+data class DArea(
+        val pos: Vector2,
+        val size: Vector2
 )
 
 data class DMaterial(
@@ -66,10 +61,163 @@ data class DMaterial(
         val transparency: Float
 )
 
-data class DModel(
+// Geomtries
+
+sealed class DGeometry
+
+data class DBufferGeometry(
+        val attributes: List<BufferAttribute>
+): DGeometry()
+
+@Deprecated("old")
+data class BufferAttribute(
+        val attributeName: String,
+        val data: FloatArray,
+        val count: Int
+)
+
+data class DTransformGeometry(
+        val source: DGeometry,
+        val translation: Vector3 = Vector3(),
+        val rotation: DRotation = DRotation(0f, Vector3()),
+        val scale: Vector3 = Vector3(1f)
+): DGeometry()
+
+// DDBB accessors
+
+sealed class DGeometrySource
+
+data class DPolygonsSource(
+        val geomField: String,
+        val tableName: String,
+        val area: DArea
+) : DGeometrySource()
+
+data class DExtrudedPolygonsSource(
+        val geomField: String,
+        val heightField: String,
+        val tableName: String,
+        val heightScale: Float,
+        val area: DArea
+) : DGeometrySource()
+
+data class DInlineSource(
+        val geometry: DGeometry
+) : DGeometrySource()
+
+// other DDBB accessors
+
+data class DPointSource(
+        val geomField: String,
+        val tableName: String,
+        val area: DArea
+)
+
+// Terrain Projection
+
+sealed class DGroundProjection
+
+data class DefaultGroundProjection(
+        val elevation: Float, // relative to the ground
+        val top: Boolean
+) : DGroundProjection()
+
+data class SnapProjection(
+        val elevation: Float // relative to the ground
+) : DGroundProjection()
+
+data class BridgeGroundProjection(
+        val startElevation: Float,
+        val endElevation: Float
+) : DGroundProjection()
+
+// Shapes (Geometry processing)
+
+sealed class DShape
+
+data class ShapeAtPoint(
         val geometry: DGeometry,
+        val point: Vector2,
+        val material: DMaterial,
+        val projection: DGroundProjection
+) : DShape()
+
+data class ShapeAtLine(
+        val geometry: DGeometry,
+        val material: DMaterial,
+        val lineStart: Vector3,
+        val lineEnd: Vector3,
+        val projection: DGroundProjection,
+        val initialGap: Float,
+        val gap: Float
+) : DShape()
+
+data class ShapeAtSurface(
+        val geometry: DGeometry,
+        val material: DMaterial,
+        val surface: DPolygon,
+        val resolution: Float,
+        val projection: DGroundProjection
+) : DShape()
+
+data class ExtrudeSurface(
+        val surface: DPolygon,
+        val height: Float,
+        val material: DMaterial,
+        val projection: DGroundProjection
+) : DShape()
+
+// Definition of shapes
+
+sealed class DShapeSource
+
+data class DInlineShapeSource(
+        val shape: DShape
+):DShapeSource()
+
+data class DExtrudedShapeSource(
+        val polygonsSource: DExtrudedPolygonsSource,
+        val material: DMaterial,
+        val projection: DGroundProjection
+):DShapeSource()
+
+data class DShapeAtPointSource(
+        val geometrySource: DGeometrySource,
+        val points: DPointSource,
+        val material: DMaterial,
+        val projection: DGroundProjection
+):DShapeSource()
+
+// Layers and render rules
+
+
+data class DRule(
+        val filter: String,
+        val minDistance: Float,
+        val maxDistance: Float,
+        val shapes: List<DShapeSource>
+)
+
+data class DLayer(
+        val name: String,
+        val description: String,
+        val rules: List<DRule>
+)
+
+// TODO keep this?
+data class DLabel(
+        val txt: String,
+        val position: Vector3,
+        val scale: Double
+)
+
+// Ground elevation files
+data class DGround(
+        val file: String,
         val material: DMaterial
 )
+
+// Cameras
 
 enum class DCameraType { PERSPECTIVE, ORTHOGRAPHIC }
 
@@ -79,99 +227,13 @@ data class DViewPoint(
         val camera: DCameraType
 )
 
-// TODO
-data class DGround(
-        val resolution: Float,
-        val exaggeration: Float,
-        val material: DMaterial
-//            val texture: TODO()
-)
-
-sealed class DGroundProjection {
-
-    data class DefaultGroundProjection(
-            val elevation: Float, // relative to the ground
-            val top: Boolean
-    ) : DGroundProjection()
-
-    data class SnapProjection(
-            val elevation: Float // relative to the ground
-    ) : DGroundProjection()
-
-    data class BridgeGroundProjection(
-            val startElevation: Float,
-            val endElevation: Float
-    ) : DGroundProjection()
-}
-
-sealed class DShape {
-
-    data class ShapeAtPoint(
-            val model: DModel,
-            val position: Vector3,
-            val rotation: DRotation,
-            val scale: Vector3,
-            val projection: DGroundProjection
-    ) : DShape()
-
-    data class ShapeAtLine(
-            val model: DModel,
-            val lineStart: Vector3,
-            val lineEnd: Vector3,
-            val rotation: DRotation, // item rotation, not line rotation
-            val scale: Vector3,
-            val projection: DGroundProjection,
-            val initialGap: Float,
-            val gap: Float
-    ) : DShape()
-
-    data class ShapeAtSurface(
-            val model: DModel,
-            val surface: DPolygon,
-            val rotation: DRotation,
-            val scale: Vector3,
-            val resolution: Float,
-            val projection: DGroundProjection
-    ) : DShape()
-
-    data class ExtrudeSurface(
-            val surface: DPolygon,
-            val height: Float,
-            val rotation: DRotation,
-            val scale: Vector3,
-            val material: DMaterial,
-            val projection: DGroundProjection
-    ) : DShape()
-
-    data class BakedShape(
-            val models: List<Pair<DMaterial, List<String>>>
-    ) : DShape()
-}
-
-data class DLabel(
-        val txt: String,
-        val position: Vector3,
-        val scale: Double
-)
-
-data class DRule(
-        val filter: String,
-        val minDistance: Float,
-        val maxDistance: Float,
-        val shapes: List<DShape>
-)
-
-data class DLayer(
-        val name: String,
-        val description: String,
-        val rules: List<DRule>,
-        val labels: List<DLabel>
-)
+// Final scene
 
 data class DScene(
         val title: String,
         val abstract: String,
         val viewPoints: List<DViewPoint>,
-//            val ground: Ground,
+        val origin: Vector2,
+        val ground: DGround,
         val layers: List<DLayer>
 )

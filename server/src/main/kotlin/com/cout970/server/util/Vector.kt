@@ -1,7 +1,7 @@
 package com.cout970.server.util
 
-import com.cout970.server.rest.Vector2
-import com.cout970.server.rest.Vector3
+import com.cout970.server.glTF.Vector2
+import com.cout970.server.glTF.Vector3
 import eu.printingin3d.javascad.coords.Coords3d
 
 operator fun Vector3.plus(other: Vector3) = Vector3(this.x + other.x, this.y + other.y, this.z + other.z)

@@ -1,8 +1,8 @@
 package com.cout970.server.terrain
 
+import com.cout970.server.glTF.Vector2
 import com.cout970.server.rest.Chunk
 import com.cout970.server.rest.HeightMap
-import com.cout970.server.rest.Vector2
 import com.cout970.server.rest.heightMapOfSize
 import com.cout970.server.util.areaOf
 import com.cout970.server.util.info
@@ -19,7 +19,6 @@ import kotlin.streams.toList
 
 object TerrainLoader {
 
-    //    val ORIGIN = Vector3f(475456.0f, 0f, 4849634.0f) map origin
     val ORIGIN = Vector3f(535909f, 0f, 4746842f)
 
     lateinit var tmpTerrainView: TerrainView

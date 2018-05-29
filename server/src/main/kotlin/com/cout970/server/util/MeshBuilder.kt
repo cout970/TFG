@@ -1,6 +1,7 @@
 package com.cout970.server.util
 
 import com.cout970.server.rest.BufferAttribute
+import com.cout970.server.rest.DBufferGeometry
 import com.cout970.server.rest.DGeometry
 import kotlin.math.tanh
 
@@ -22,7 +23,7 @@ object MeshBuilder {
 //            colorData[ptr2++] = tanh(coords[(it * 3) + 2]) * 0.5f + 0.5f
         }
 
-        return DGeometry(listOf(
+        return DBufferGeometry(listOf(
                 BufferAttribute("position", vertexData, 3)
 //                BufferAttribute("color", colorData, 3)
         ))
@@ -44,7 +45,7 @@ object MeshBuilder {
             colorData[ptr2++] = tanh(coords[(it / 3) + 2]) * 0.5f + 0.5f
         }
 
-        return DGeometry(listOf(
+        return DBufferGeometry(listOf(
                 BufferAttribute("position", vertexData, 3),
                 BufferAttribute("color", colorData, 3)
         ))

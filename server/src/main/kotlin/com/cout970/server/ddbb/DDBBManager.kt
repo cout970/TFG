@@ -1,8 +1,9 @@
 package com.cout970.server.ddbb
 
 import com.cout970.server.Config
+import com.cout970.server.glTF.Vector2
 import com.cout970.server.rest.DPolygon
-import com.cout970.server.rest.Vector2
+import com.cout970.server.terrain.TerrainLoader
 import com.cout970.server.util.info
 import com.cout970.server.util.relativize
 import com.cout970.server.util.toPolygon
@@ -109,6 +110,25 @@ object DDBBManager {
             Label(
                     text = name,
                     pos = Vector2(center.x.toFloat(), center.y.toFloat()).relativize()
+            )
+        }
+    }
+
+    fun loadPoints(geomField: String, tableName: String, area: Area): List<Vector2> {
+        val sql = """
+                SELECT geom
+                FROM "$tableName", $area AS area
+                WHERE ST_Within($geomField, area);
+                      """
+
+        return DDBBManager.load(sql) {
+
+            val geom = it.getObject("geom") as PGgeometry
+            val point = geom.geometry as Point
+
+            Vector2(
+                    point.x.toFloat() - TerrainLoader.ORIGIN.x,
+                    point.y.toFloat() - TerrainLoader.ORIGIN.z
             )
         }
     }
