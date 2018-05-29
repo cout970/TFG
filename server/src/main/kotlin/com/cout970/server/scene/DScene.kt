@@ -67,7 +67,7 @@ sealed class DGeometry
 
 data class DBufferGeometry(
         val attributes: List<BufferAttribute>
-): DGeometry()
+) : DGeometry()
 
 @Deprecated("old")
 data class BufferAttribute(
@@ -81,7 +81,7 @@ data class DTransformGeometry(
         val translation: Vector3 = Vector3(),
         val rotation: DRotation = DRotation(0f, Vector3()),
         val scale: Vector3 = Vector3(1f)
-): DGeometry()
+) : DGeometry()
 
 // DDBB accessors
 
@@ -177,26 +177,41 @@ sealed class DShapeSource
 
 data class DInlineShapeSource(
         val shape: DShape
-): DShapeSource()
-
-data class DExtrudedShapeSource(
-        val polygonsSource: DExtrudedPolygonsSource,
-        val material: DMaterial,
-        val projection: DGroundProjection
-): DShapeSource()
+) : DShapeSource()
 
 data class DShapeAtPointSource(
         val geometrySource: DGeometrySource,
         val points: DPointSource,
         val material: DMaterial,
         val projection: DGroundProjection
-): DShapeSource()
+) : DShapeSource()
+
+data class DShapeAtSurfaceSource(
+        val geometrySource: DGeometrySource,
+        val surfaceSource: DPolygonsSource,
+        val resolution: Float,
+        val material: DMaterial,
+        val projection: DGroundProjection
+) : DShapeSource()
+
+data class DExtrudedShapeSource(
+        val polygonsSource: DExtrudedPolygonsSource,
+        val material: DMaterial,
+        val projection: DGroundProjection
+) : DShapeSource()
+
+data class DExtrudeShapeSource(
+        val polygonsSource: DPolygonsSource,
+        val height: Float,
+        val material: DMaterial,
+        val projection: DGroundProjection
+) : DShapeSource()
 
 data class DPolygonsShapeSource(
         val geometrySource: DPolygonsSource,
         val material: DMaterial,
         val projection: DGroundProjection
-): DShapeSource()
+) : DShapeSource()
 
 // Layers and render rules
 
@@ -224,7 +239,9 @@ data class DLabel(
 // Ground elevation files
 data class DGround(
         val file: String,
-        val material: DMaterial
+        val material: DMaterial,
+        val area: DArea,
+        val gridSize: Float
 )
 
 // Cameras

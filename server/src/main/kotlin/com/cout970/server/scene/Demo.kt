@@ -7,6 +7,7 @@ import com.cout970.server.util.colorFromHue
 import com.cout970.server.util.debug
 import com.cout970.server.util.toGeometry
 import eu.printingin3d.javascad.coords.Coords3d
+import eu.printingin3d.javascad.coords.Dims3d
 import eu.printingin3d.javascad.models.Cube
 import org.joml.Vector2f
 import org.joml.Vector3f
@@ -36,6 +37,43 @@ fun createDemoScene(): DScene {
             Coords3d(0.0, 4.0, 0.0),
             Coords3d(1.0, 5.0, 1.0)
     )).toGeometry()
+
+    val parkModel = Cube(Dims3d(1.0, 10.0, 1.0)).toGeometry()
+
+    val schools = DExtrudeShapeSource(
+            polygonsSource = DPolygonsSource(
+                    geomField = "geom",
+                    tableName = "centros de enseñanza (polígono)",
+                    area = area
+            ),
+            height = 50f,
+            material = DMaterial(
+                    ambientIntensity = 0.5f,
+                    shininess = 0f,
+                    diffuseColor = colorFromHue(240.1f / 360f),
+                    emissiveColor = DColor(0f, 0f, 0f),
+                    specularColor = DColor(1f, 1f, 1f),
+                    transparency = 0.05f
+            ),
+            projection = DefaultGroundProjection(0f, false)
+    )
+
+    val parks = DShapeAtSurfaceSource(
+            geometrySource = DInlineSource(parkModel),
+            surfaceSource = DPolygonsSource(
+                    "geom", "parques (polígono)", area
+            ),
+            resolution = 0.01f,
+            material = DMaterial(
+                    ambientIntensity = 0.5f,
+                    shininess = 0f,
+                    diffuseColor = DColor(0f, 0.5f, 0f),
+                    emissiveColor = DColor(0f, 0f, 0f),
+                    specularColor = DColor(1f, 1f, 1f),
+                    transparency = 0f
+            ),
+            projection = DefaultGroundProjection(0f, false)
+    )
 
     val lights = DShapeAtPointSource(
             points = DPointSource("geom", "puntos de luz", area),
@@ -87,6 +125,28 @@ fun createDemoScene(): DScene {
             projection = DefaultGroundProjection(1f, false)
     )
 
+    val schoolsLayer = DLayer(
+            name = "Parks",
+            description = "Description",
+            rules = listOf(DRule(
+                    filter = "none",
+                    minDistance = 0f,
+                    maxDistance = 10f,
+                    shapes = listOf(schools)
+            ))
+    )
+
+    val parksLayer = DLayer(
+            name = "Parks",
+            description = "Description",
+            rules = listOf(DRule(
+                    filter = "none",
+                    minDistance = 0f,
+                    maxDistance = 10f,
+                    shapes = listOf(parks)
+            ))
+    )
+
     val lightsLayer = DLayer(
             name = "Lights",
             description = "Description",
@@ -126,24 +186,29 @@ fun createDemoScene(): DScene {
             camera = DCameraType.PERSPECTIVE
     )
 
-    val ground = DGround("../data/GaliciaDTM25m.tif", DMaterial(
-            ambientIntensity = 0.0f,
-            shininess = 0f,
-            diffuseColor = DColor(0.0f, 1.0f, 0.0f),
-            emissiveColor = DColor(0f, 0f, 0f),
-            specularColor = DColor(0f, 0f, 0f),
-            transparency = 0.0f
-    ))
+    val ground = DGround(
+            file = "../data/GaliciaDTM25m.tif",
+            material = DMaterial(
+                    ambientIntensity = 0.0f,
+                    shininess = 0f,
+                    diffuseColor = DColor(0.0f, 1.0f, 0.0f),
+                    emissiveColor = DColor(0f, 0f, 0f),
+                    specularColor = DColor(0f, 0f, 0f),
+                    transparency = 0.0f
+            ),
+            area = area,
+            gridSize = 25f
+    )
 
-    val s = DScene(
+    val scene = DScene(
             title = "Demo scene",
             abstract = "A demo scene showing the base components of a scene",
             viewPoints = listOf(mainViewPoint),
-            layers = listOf(buildingLayer, streetLayer, lightsLayer),
+            layers = listOf(buildingLayer, streetLayer, lightsLayer, parksLayer, schoolsLayer),
             ground = ground,
             origin = origin
     )
 
-    File("test.json").writeText(GLTF_GSON.toJson(s))
-    return s
+    File("test.json").writeText(GLTF_GSON.toJson(scene))
+    return scene
 }

@@ -39,15 +39,19 @@ object Rest {
 
             // get file
             get("/api/files/:filename") {
-                File("files/${request.params("filename")}").readBytes()
+                val name = request.params("filename")
+                info("File requested: $name")
+                File("files/$name").readBytes()
             }
 
             get("/api/scene/:filename") {
                 val filename = request.params("filename")
 
                 if (filename in sceneRegistry) {
+                    info("Scene requested: $filename")
                     File("files/${sceneRegistry[filename]}").readBytes()
                 } else {
+                    info("Scene requested: $filename, but not found")
                     response.status(404)
                     response.body("Requested scene doesn't exist")
                     Unit
@@ -55,10 +59,12 @@ object Rest {
             }
 
             get("/api/scenes") {
+                info("Scene list requested")
                 sceneRegistry.entries.joinToString(",", prefix = "[", postfix = "]") { "\"${it.key}\"" }
             }
 
             post("/api/scenes") {
+                info("Scene uploaded")
                 val scene = SCENE_GSON.fromJson(request.body(), DScene::class.java)
                 val name = registerScene(scene)
                 response.header("location", name)

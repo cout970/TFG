@@ -1,7 +1,7 @@
 package com.cout970.server.util
 
 import com.cout970.server.glTF.Vector2
-import com.cout970.server.scene.DGeometry
+import com.cout970.server.scene.DBufferGeometry
 import com.cout970.server.scene.GeometryBuilder
 import eu.printingin3d.javascad.coords.Triangle3d
 import eu.printingin3d.javascad.models.IModel
@@ -10,18 +10,18 @@ import eu.printingin3d.javascad.vrl.Polygon
 import com.cout970.server.scene.DPolygon as Polygon2D
 
 @JvmName("toGeometryFromPolygon")
-fun List<Polygon>.toGeometry(): DGeometry {
+fun List<Polygon>.toGeometry(): DBufferGeometry {
     return flatMap { it.toFacets() }.map { it.triangle }.toGeometry()
 }
 
 @JvmName("toGeometryFromTriangles")
-fun List<Triangle3d>.toGeometry(): DGeometry {
+fun List<Triangle3d>.toGeometry(): DBufferGeometry {
     val coords = flatMap { it.points }.flatMap { listOf(it.x.toFloat(), it.y.toFloat(), it.z.toFloat()) }
 
     return GeometryBuilder.build(coords)
 }
 
-fun IModel.toGeometry(): DGeometry {
+fun IModel.toGeometry(): DBufferGeometry {
     return toCSG(FacetGenerationContext.DEFAULT).polygons.toGeometry()
 }
 

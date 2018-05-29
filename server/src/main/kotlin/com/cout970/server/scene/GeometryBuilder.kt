@@ -2,7 +2,7 @@ package com.cout970.server.scene
 
 object GeometryBuilder {
 
-    fun build(coords: List<Float>): DGeometry {
+    fun build(coords: List<Float>): DBufferGeometry {
         val vertexData = FloatArray(coords.size)
         var ptr = 0
 
@@ -17,7 +17,7 @@ object GeometryBuilder {
         ))
     }
 
-    fun build(indices: List<Int>, coords: List<Float>): DGeometry {
+    fun build(indices: List<Int>, coords: List<Float>): DBufferGeometry {
         val vertexData = FloatArray(indices.size * 3)
         var ptr = 0
 

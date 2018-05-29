@@ -8,6 +8,4 @@ object Config {
     val DDBB_PASSWORD = { System.getProperty("DDBB_PASSWORD") ?: "root" }
 
     val JDBC_URL = "jdbc:postgresql://$DDBB_HOST:$DDBB_POST/$DDBB_NAME"
-
-
 }

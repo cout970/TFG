@@ -47,7 +47,7 @@ object DDBBManager {
     }
 
     fun Connection.query(sql: String): Sequence<ResultSet> = buildSequence {
-        info("Query started")
+        info("Query started: '${sql.trimIndent().replace("\n", " ")}'")
         val start = System.currentTimeMillis()
         val statement = createStatement()
         val resultSet = statement.executeQuery(sql)

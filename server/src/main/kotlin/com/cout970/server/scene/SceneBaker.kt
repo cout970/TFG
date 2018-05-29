@@ -13,6 +13,7 @@ import eu.printingin3d.javascad.coords.Triangle3d
 import eu.printingin3d.javascad.coords2d.Coords2d
 import eu.printingin3d.javascad.models.Cube
 import eu.printingin3d.javascad.models.LinearExtrude
+import eu.printingin3d.javascad.models.Polyhedron
 import eu.printingin3d.javascad.models2d.Polygon
 import eu.printingin3d.javascad.vrl.FacetGenerationContext
 import org.joml.Matrix4f
@@ -26,6 +27,25 @@ object SceneBaker {
 
         scene {
             name = scene.title
+
+            node {
+                name = "terrain"
+
+//                DMaterial(
+//                        ambientIntensity = 0.0f,
+//                        shininess = 0f,
+//                        diffuseColor = DColor(0.0f, 1.0f, 0.0f),
+//                        emissiveColor = DColor(0f, 0f, 0f),
+//                        specularColor = DColor(0f, 0f, 0f),
+//                        transparency = 0.0f
+//                )
+
+                mesh {
+
+                    val mesh = generateTerrainMesh(scene.origin, scene.ground.area, scene.ground.gridSize)
+                    setGeometry(this, mesh.project(SnapProjection(0f)))
+                }
+            }
 
             scene.layers.forEach { layer ->
 
@@ -56,16 +76,27 @@ object SceneBaker {
     private fun GLTFBuilder.shapeMesh(node: GLTFBuilder.Node, model: Model) = node.apply {
         mesh {
 
-            // TODO add material
             val geom = model.geometry
 
-            primitive {
+            setGeometry(this, geom)
+        }
+    }
 
-                val data: FloatArray = geom.attributes[0].data
-                val vertices = data.toList().windowed(3, 3).map { Vector3(it[0], it[1], it[2]) }
+    private fun GLTFBuilder.setGeometry(mesh: GLTFBuilder.Mesh, geom: DBufferGeometry) = mesh.apply {
+        primitive {
 
-                attributes[POSITION] = buffer(FLOAT, vertices)
+            val data: FloatArray = geom.attributes[0].data
+            val vertices = ArrayList<Vector3>(data.size / 3)
+
+            repeat(data.size / 3) {
+                vertices += Vector3(
+                        data[it * 3],
+                        data[it * 3 + 1],
+                        data[it * 3 + 2]
+                )
             }
+
+            attributes[POSITION] = buffer(FLOAT, vertices)
         }
     }
 
@@ -76,6 +107,8 @@ object SceneBaker {
         is DExtrudedShapeSource -> getShapes(source)
         is DShapeAtPointSource -> getShapes(source)
         is DPolygonsShapeSource -> getShapes(source)
+        is DShapeAtSurfaceSource -> getShapes(source)
+        is DExtrudeShapeSource -> getShapes(source)
     }
 
     fun getShapes(source: DExtrudedShapeSource): List<DShape> {
@@ -120,6 +153,40 @@ object SceneBaker {
                     projection = source.projection,
                     material = source.material
             )
+        }
+    }
+
+    fun getShapes(source: DShapeAtSurfaceSource): List<DShape> {
+        val geom = getGeometry(source.geometrySource)
+        val src = source.surfaceSource
+        val polys = DDBBManager.loadPolygons(src.geomField, src.tableName, src.area.toSQL())
+
+        return polys.flatMap { poly ->
+            poly.polygons.map { surface ->
+                ShapeAtSurface(
+                        geometry = geom,
+                        surface = surface,
+                        resolution = source.resolution,
+                        projection = source.projection,
+                        material = source.material
+                )
+            }
+        }
+    }
+
+    fun getShapes(source: DExtrudeShapeSource): List<DShape> {
+        val src = source.polygonsSource
+        val geoms = DDBBManager.loadPolygons(src.geomField, src.tableName, src.area.toSQL())
+
+        return geoms.flatMap { epg ->
+            epg.polygons.map { poly ->
+                ExtrudeSurface(
+                        surface = poly,
+                        height = source.height,
+                        material = source.material,
+                        projection = source.projection
+                )
+            }
         }
     }
 
@@ -269,12 +336,12 @@ object SceneBaker {
             scale(scale)
         }
 
-        if(matrix == Matrix4f()) return this
+        if (matrix == Matrix4f()) return this
 
         val newAttributes = attributes.map { attr ->
             if (attr.attributeName != "position") return@map attr
 
-            val data = expandTriangles(attr.data)
+            val data = attr.data
 
             val newData = FloatArray(data.size)
             val input = Vector4f(0f, 0f, 0f, 1f)
@@ -382,63 +449,76 @@ object SceneBaker {
         return 0.5f * (-p1.y * p2.x + p0.y * (-p1.x + p2.x) + p0.x * (p1.y - p2.y) + p1.x * p2.y)
     }
 
-    private fun expandTriangles(data: FloatArray): FloatArray {
-        val list = FloatArrayList()
-        val p0 = Vector3()
-        val p1 = Vector3()
-        val p2 = Vector3()
-
-        repeat(data.size / 9) { i ->
-            p0.x = data[i * 9]
-            p0.y = data[i * 9 + 1]
-            p0.z = data[i * 9 + 2]
-
-            p1.x = data[i * 9 + 3]
-            p1.y = data[i * 9 + 4]
-            p1.z = data[i * 9 + 5]
-
-            p2.x = data[i * 9 + 6]
-            p2.y = data[i * 9 + 7]
-            p2.z = data[i * 9 + 8]
-
-            val p10 = p0 - p1
-            val p20 = p0 - p2
-            val p21 = p1 - p2
-
-            if (p10.length() > 50 || p20.length() > 50 || p21.length() > 50) {
-
-                val a = p10 * 0.5f + p1
-                val b = p20 * 0.5f + p2
-                val c = p21 * 0.5f + p2
-
-                // left-down
-                list.add(p0)
-                list.add(a + Vector3(0f, 100f, 0f))
-                list.add(b)
-
-                //center
-                list.add(a)
-                list.add(c + Vector3(0f, 100f, 0f))
-                list.add(b)
-
-                // right-down
-                list.add(b)
-                list.add(c + Vector3(0f, 100f, 0f))
-                list.add(p2)
-
-                // top
-                list.add(a)
-                list.add(p1 + Vector3(0f, 100f, 0f))
-                list.add(c)
-
-            } else {
-                list.add(p0)
-                list.add(p1)
-                list.add(p2)
-            }
-        }
-        return list.toFloatArray()
-    }
+//    private fun expandTriangles(input: FloatArray): FloatArray {
+//        var data = input
+//        val list = FloatArrayList()
+//        val p0 = Vector3()
+//        val p1 = Vector3()
+//        val p2 = Vector3()
+//        val limit = 25 / 5
+//        var keep = true
+//        var count = 0
+//
+//        while (keep) {
+//
+//            keep = false
+//            repeat(data.size / 9) { i ->
+//                p0.x = data[i * 9]
+//                p0.y = data[i * 9 + 1]
+//                p0.z = data[i * 9 + 2]
+//
+//                p1.x = data[i * 9 + 3]
+//                p1.y = data[i * 9 + 4]
+//                p1.z = data[i * 9 + 5]
+//
+//                p2.x = data[i * 9 + 6]
+//                p2.y = data[i * 9 + 7]
+//                p2.z = data[i * 9 + 8]
+//
+//                val p10 = p0 - p1
+//                val p20 = p0 - p2
+//                val p21 = p1 - p2
+//
+//                if (p10.length() > limit || p20.length() > limit || p21.length() > limit) {
+//
+//                    keep = true
+//                    val a = p10 * 0.5f + p1
+//                    val b = p20 * 0.5f + p2
+//                    val c = p21 * 0.5f + p2
+//
+//                    // left-down
+//                    list.add(p0)
+//                    list.add(a)
+//                    list.add(b)
+//
+//                    //center
+//                    list.add(a)
+//                    list.add(c)
+//                    list.add(b)
+//
+//                    // right-down
+//                    list.add(b)
+//                    list.add(c)
+//                    list.add(p2)
+//
+//                    // top
+//                    list.add(a)
+//                    list.add(p1)
+//                    list.add(c)
+//
+//                } else {
+//                    list.add(p0)
+//                    list.add(p1)
+//                    list.add(p2)
+//                }
+//            }
+//            count++
+//            data = list.toFloatArray()
+//            list.clear()
+//        }
+//        println("Original size: ${input.size}, Final size: ${data.size}, loops: $count")
+//        return data
+//    }
 
     private fun FloatArrayList.add(i: Vector3) {
         add(i.x)
@@ -457,5 +537,26 @@ object SceneBaker {
 
             Model(geom.get(), it.key)
         }
+    }
+
+    private fun generateTerrainMesh(origin: Vector2, area: DArea, scale: Float): DBufferGeometry {
+        val s = scale.toDouble()
+        val cell = 1f / scale
+        val pos = area.pos - origin
+
+        val minI = (pos.x * cell).toInt()
+        val maxI = ((pos.x + area.size.x) * cell).toInt()
+
+        val minJ = (pos.y * cell).toInt()
+        val maxJ = ((pos.y + area.size.x) * cell).toInt()
+
+        val triangles = areaOf(minI..maxI, minJ..maxJ).toList().flatMap { (x, y) ->
+            listOf(
+                    Triangle3d(Coords3d((x + 1) * s, 0.0, (y + 1) * s), Coords3d((x + 1) * s, 0.0, y * s), Coords3d(x * s, 0.0, y * s)),
+                    Triangle3d(Coords3d(x * s, 0.0, (y + 1) * s), Coords3d((x + 1) * s, 0.0, (y + 1) * s), Coords3d(x * s, 0.0, y * s))
+            )
+        }
+
+        return Polyhedron(triangles).toGeometry()
     }
 }
