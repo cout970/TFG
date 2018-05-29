@@ -2,16 +2,14 @@ package com.cout970.server.rest
 
 import com.cout970.server.ddbb.BuildingLayerLoader
 import com.cout970.server.ddbb.TerrainLayerLoader
-import com.cout970.server.rest.Defs.CameraType.PERSPECTIVE
-import com.cout970.server.rest.Defs.Rotation
-import com.cout970.server.rest.Defs.Scene
-import com.cout970.server.rest.Defs.ViewPoint
+import com.cout970.server.glTF.GLTF_GSON
 import com.cout970.server.util.SceneBaker
 import com.cout970.server.util.debug
 import com.cout970.server.util.getAreaString
 import org.joml.Vector3f
+import java.io.File
 
-lateinit var scene: Scene
+lateinit var scene: DScene
 
 fun bakeScene() {
     debug("Baking scene...")
@@ -21,7 +19,7 @@ fun bakeScene() {
     debug("Scene baked")
 }
 
-fun createDemoScene(): Scene {
+fun createDemoScene(): DScene {
 
     val area = getAreaString(0 to 0)
     debug("Baking buildings...")
@@ -37,17 +35,20 @@ fun createDemoScene(): Scene {
     debug("Baking terrain...")
     val terrainLayer = TerrainLayerLoader.load(area)
 
-    val mainViewPoint = ViewPoint(
+    val mainViewPoint = DViewPoint(
             location = Vector3f(0f, 800f, 0f),
-            orientation = Rotation(0f, Vector3f(0f, 0f, 0f)),
-            camera = PERSPECTIVE
+            orientation = DRotation(0f, Vector3f(0f, 0f, 0f)),
+            camera = DCameraType.PERSPECTIVE
     )
 
-    return Scene(
+    val s = DScene(
             title = "Demo scene",
             abstract = "A demo scene showing the base components of a scene",
             viewPoints = listOf(mainViewPoint),
             layers = listOf(terrainLayer, buildingLayer)
 //                    parksLayer, schoolsLayer)
     )
+
+    File("test.json").writeText(GLTF_GSON.toJson(s))
+    return s
 }

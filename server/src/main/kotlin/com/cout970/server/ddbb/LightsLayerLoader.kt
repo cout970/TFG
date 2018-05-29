@@ -1,8 +1,6 @@
 package com.cout970.server.ddbb
 
-import com.cout970.server.rest.Defs
-import com.cout970.server.rest.Vector2
-import com.cout970.server.rest.Vector3
+import com.cout970.server.rest.*
 import com.cout970.server.terrain.TerrainLoader
 import com.cout970.server.util.SceneBaker
 import com.cout970.server.util.toGeometry
@@ -14,12 +12,12 @@ import org.postgis.Point
 
 object LightsLayerLoader : ILayerLoader {
 
-    private val material = Defs.Material(
+    private val material = DMaterial(
             ambientIntensity = 0.5f,
             shininess = 0f,
-            diffuseColor = Defs.Color(1f, 1f, 0.0f),
-            emissiveColor = Defs.Color(0.1f, 0.1f, 0.1f),
-            specularColor = Defs.Color(.1f, 1f, 1f),
+            diffuseColor = DColor(1f, 1f, 0.0f),
+            emissiveColor = DColor(0.1f, 0.1f, 0.1f),
+            specularColor = DColor(.1f, 1f, 1f),
             transparency = 0f
     )
 
@@ -31,15 +29,15 @@ object LightsLayerLoader : ILayerLoader {
             Coords3d(1.0, 5.0, 1.0)
     )).toGeometry()
 
-    override fun load(area: Area): Defs.Layer {
+    override fun load(area: Area): DLayer {
         val shapes = loadFromDDBB(area).map { b -> shapeOf(b) }
 
         val bakedShapes = listOf(SceneBaker.bakeShapes(shapes))
 
-        return Defs.Layer(
+        return DLayer(
                 name = "Lights",
                 description = "This layer shows all the light points",
-                rules = listOf(Defs.Rule(
+                rules = listOf(DRule(
                         filter = "ignore",
                         minDistance = 0f,
                         maxDistance = 2000f,
@@ -49,14 +47,14 @@ object LightsLayerLoader : ILayerLoader {
         )
     }
 
-    private fun shapeOf(b: Light): Defs.Shape {
+    private fun shapeOf(b: Light): DShape {
         val (pos) = b
-        return Defs.Shape.ShapeAtPoint(
+        return DShape.ShapeAtPoint(
                 position = Vector3(pos.x, 0f, pos.y),
-                rotation = Defs.Rotation(0f, Vector3f(0f, 0f, 0f)),
+                rotation = DRotation(0f, Vector3f(0f, 0f, 0f)),
                 scale = Vector3(1f),
-                projection = Defs.GroundProjection.DefaultGroundProjection(0f, false),
-                model = Defs.Model(geometry, material)
+                projection = DGroundProjection.DefaultGroundProjection(0f, false),
+                model = DModel(geometry, material)
         )
     }
 

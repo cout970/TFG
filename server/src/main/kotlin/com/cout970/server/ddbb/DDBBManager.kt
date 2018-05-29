@@ -1,7 +1,7 @@
 package com.cout970.server.ddbb
 
 import com.cout970.server.Config
-import com.cout970.server.rest.Defs
+import com.cout970.server.rest.DPolygon
 import com.cout970.server.rest.Vector2
 import com.cout970.server.util.info
 import com.cout970.server.util.relativize
@@ -113,8 +113,8 @@ object DDBBManager {
         }
     }
 
-    data class PolygonGroup(val polygons: List<Defs.Polygon>)
-    data class ExtrudePolygonGroup(val polygons: List<Defs.Polygon>, val height: Float)
+    data class PolygonGroup(val polygons: List<DPolygon>)
+    data class ExtrudePolygonGroup(val polygons: List<DPolygon>, val height: Float)
     data class Label(val text: String, val pos: Vector2)
 }
 

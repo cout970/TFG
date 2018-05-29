@@ -1,11 +1,13 @@
 package com.cout970.server.glTF
 
+import com.cout970.server.rest.DColor
 import com.cout970.server.rest.Vector2
 import com.cout970.server.rest.Vector3
 import com.cout970.server.rest.Vector4
 import com.google.gson.*
 import com.google.gson.reflect.TypeToken
 import org.joml.Quaternionf
+import java.awt.Color
 import java.lang.reflect.Type
 import java.util.*
 
@@ -21,24 +23,24 @@ class ProjectExclusionStrategy : ExclusionStrategy {
     }
 }
 
-class Vector2Serializer : JsonSerializer<IVector2>, JsonDeserializer<IVector2> {
+class Vector2Serializer : JsonSerializer<Vector2>, JsonDeserializer<Vector2> {
 
-    override fun serialize(src: IVector2, typeOfSrc: Type, context: JsonSerializationContext): JsonElement {
+    override fun serialize(src: Vector2, typeOfSrc: Type, context: JsonSerializationContext): JsonElement {
         return JsonArray().apply {
             add(src.x)
             add(src.y)
         }
     }
 
-    override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): IVector2 {
+    override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): Vector2 {
         val array = json.asJsonArray
         return Vector2(array[0].asFloat, array[1].asFloat)
     }
 }
 
-class Vector3Serializer : JsonSerializer<IVector3>, JsonDeserializer<IVector3> {
+class Vector3Serializer : JsonSerializer<Vector3>, JsonDeserializer<Vector3> {
 
-    override fun serialize(src: IVector3, typeOfSrc: Type, context: JsonSerializationContext): JsonElement {
+    override fun serialize(src: Vector3, typeOfSrc: Type, context: JsonSerializationContext): JsonElement {
         return JsonArray().apply {
             add(src.x)
             add(src.y)
@@ -46,16 +48,16 @@ class Vector3Serializer : JsonSerializer<IVector3>, JsonDeserializer<IVector3> {
         }
     }
 
-    override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): IVector3 {
+    override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): Vector3 {
         val array = json.asJsonArray
         return Vector3(array[0].asFloat, array[1].asFloat, array[2].asFloat)
     }
 
 }
 
-class Vector4Serializer : JsonSerializer<IVector4>, JsonDeserializer<IVector4> {
+class Vector4Serializer : JsonSerializer<Vector4>, JsonDeserializer<Vector4> {
 
-    override fun serialize(src: IVector4, typeOfSrc: Type, context: JsonSerializationContext): JsonElement {
+    override fun serialize(src: Vector4, typeOfSrc: Type, context: JsonSerializationContext): JsonElement {
         return JsonArray().apply {
             add(src.x)
             add(src.y)
@@ -64,16 +66,16 @@ class Vector4Serializer : JsonSerializer<IVector4>, JsonDeserializer<IVector4> {
         }
     }
 
-    override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): IVector4 {
+    override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): Vector4 {
         val array = json.asJsonArray
         return Vector4(array[0].asFloat, array[1].asFloat, array[2].asFloat, array[3].asFloat)
     }
 
 }
 
-class QuaternionSerializer : JsonSerializer<IQuaternion>, JsonDeserializer<IQuaternion> {
+class QuaternionSerializer : JsonSerializer<Quaternion>, JsonDeserializer<Quaternion> {
 
-    override fun serialize(src: IQuaternion, typeOfSrc: Type, context: JsonSerializationContext): JsonElement {
+    override fun serialize(src: Quaternion, typeOfSrc: Type, context: JsonSerializationContext): JsonElement {
         return JsonArray().apply {
             add(src.x)
             add(src.y)
@@ -82,15 +84,15 @@ class QuaternionSerializer : JsonSerializer<IQuaternion>, JsonDeserializer<IQuat
         }
     }
 
-    override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): IQuaternion {
+    override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): Quaternion {
         val array = json.asJsonArray
         return Quaternionf(array[0].asFloat, array[1].asFloat, array[2].asFloat, array[3].asFloat)
     }
 }
 
-class Matrix4Serializer : JsonSerializer<IMatrix4>, JsonDeserializer<IMatrix4> {
+class Matrix4Serializer : JsonSerializer<Matrix4>, JsonDeserializer<Matrix4> {
 
-    override fun serialize(src: IMatrix4, typeOfSrc: Type, context: JsonSerializationContext): JsonElement {
+    override fun serialize(src: Matrix4, typeOfSrc: Type, context: JsonSerializationContext): JsonElement {
         return JsonArray().apply {
             add(src.m00())
             add(src.m01())
@@ -114,9 +116,9 @@ class Matrix4Serializer : JsonSerializer<IMatrix4>, JsonDeserializer<IMatrix4> {
         }
     }
 
-    override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): IMatrix4 {
+    override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): Matrix4 {
         val array = json.asJsonArray
-        return IMatrix4(
+        return Matrix4(
                 array[0].asFloat, array[1].asFloat, array[2].asFloat, array[3].asFloat,
                 array[4].asFloat, array[5].asFloat, array[6].asFloat, array[7].asFloat,
                 array[8].asFloat, array[9].asFloat, array[10].asFloat, array[11].asFloat,
@@ -132,6 +134,22 @@ class UUIDSerializer : JsonSerializer<UUID>, JsonDeserializer<UUID> {
 
     override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): UUID {
         return UUID.fromString(json.asString)
+    }
+}
+
+class ColorSerializer : JsonSerializer<DColor>, JsonDeserializer<DColor> {
+
+    override fun serialize(src: DColor, typeOfSrc: Type, context: JsonSerializationContext): JsonElement {
+        val str = Integer.toHexString(Color(src.r, src.g, src.b, 1f).rgb).run {
+            substring(2, length)
+        }
+        return JsonPrimitive(str)
+    }
+
+    override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): DColor {
+        val str = json.asString
+        val color = Color(str.toInt(16))
+        return DColor(color.red / 255f, color.green / 255f, color.blue / 255f)
     }
 }
 
@@ -158,13 +176,13 @@ inline fun <T> Iterable<T>.toJsonArray(func: (T) -> JsonElement): JsonArray {
     }
 }
 
-fun JsonArray.toVector2(): IVector2 = Vector2(this[0].asFloat, this[1].asFloat)
-fun JsonArray.toVector3(): IVector3 = Vector3(this[0].asFloat, this[1].asFloat, this[2].asFloat)
-fun JsonArray.toVector4(): IVector4 = Vector4(this[0].asFloat, this[1].asFloat, this[2].asFloat, this[3].asFloat)
+fun JsonArray.toVector2(): Vector2 = Vector2(this[0].asFloat, this[1].asFloat)
+fun JsonArray.toVector3(): Vector3 = Vector3(this[0].asFloat, this[1].asFloat, this[2].asFloat)
+fun JsonArray.toVector4(): Vector4 = Vector4(this[0].asFloat, this[1].asFloat, this[2].asFloat, this[3].asFloat)
 
-val JsonElement.asVector2: IVector2 get() = this.asJsonArray.toVector2()
-val JsonElement.asVector3: IVector3 get() = this.asJsonArray.toVector3()
-val JsonElement.asVector4: IVector4 get() = this.asJsonArray.toVector4()
+val JsonElement.asVector2: Vector2 get() = this.asJsonArray.toVector2()
+val JsonElement.asVector3: Vector3 get() = this.asJsonArray.toVector3()
+val JsonElement.asVector4: Vector4 get() = this.asJsonArray.toVector4()
 
 inline fun <reified T> JsonDeserializationContext.deserializeT(json: JsonElement): T {
     return deserialize(json, object : TypeToken<T>() {}.type)

@@ -4,12 +4,12 @@ import com.cout970.server.rest.Vector3
 import com.cout970.server.rest.Vector4
 import org.joml.*
 
-typealias IQuaternion = Quaternionf
+typealias Quaternion = Quaternionf
 typealias IMatrix3 = Matrix3f
-typealias IMatrix4 = Matrix4f
-typealias IVector2 = Vector2f
-typealias IVector3 = Vector3f
-typealias IVector4 = Vector4f
+typealias Matrix4 = Matrix4f
+typealias Vector2 = Vector2f
+typealias Vector3 = Vector3f
+typealias Vector4 = Vector4f
 
 typealias JsObject = Map<String, Any>
 
@@ -73,11 +73,11 @@ data class GltfNode (
         val camera: Int?            = null,                 // The index of the camera referenced by this node.
         val children: List<Int>     = emptyList(),          // The indices of this node's children.
         val skin: Int?              = null,                 // The index of the skin referenced by this node.
-        val matrix: IMatrix4?       = IMatrix4(),     // A floating-point 4x4 transformation matrix stored in column-major order.
+        val matrix: Matrix4?       = Matrix4(),     // A floating-point 4x4 transformation matrix stored in column-major order.
         val mesh: Int?              = null,                 // The index of the mesh in this node.
-        val rotation: IQuaternion?  = IQuaternion(),  // The node's unit quaternion rotation in the order (x, y, z, w), where w is the scalar.
-        val scale: IVector3?        = Vector3(1f),          // The node's non-uniform scale, given as the scaling factors along the x, y, and z axes.
-        val translation: IVector3?  = Vector3(),         // The node's translation along the x, y, and z axes.
+        val rotation: Quaternion?  = Quaternion(),  // The node's unit quaternion rotation in the order (x, y, z, w), where w is the scalar.
+        val scale: Vector3?        = Vector3(1f),          // The node's non-uniform scale, given as the scaling factors along the x, y, and z axes.
+        val translation: Vector3?  = Vector3(),         // The node's translation along the x, y, and z axes.
         val weights: List<Double>   = emptyList(),          // The weights of the instantiated Morph Target. Number of elements must match number of Morph Targets of used mesh.
         val name: String?           = null,                 // The user-defined name of this object. This is not necessarily unique, e.g., an accessor and a buffer could have the same name, or two accessors could even have the same name.
         val extensions: String?     = null,                 // Dictionary object with extension-specific objects.
@@ -201,14 +201,14 @@ data class GltfMaterial(
         val normalTexture: GltfNormalTextureInfo?           = null,             // A tangent space normal map. The texture contains RGB components in linear space. Each texel represents the XYZ components of a normal vector in tangent space. Red [0 to 255] maps to X [-1 to 1]. Green [0 to 255] maps to Y [-1 to 1]. Blue [128 to 255] maps to Z [1/255 to 1]. The normal vectors use OpenGL conventions where +X is right and +Y is up. +Z points toward the viewer. In GLSL, this vector would be unpacked like so: vec3 normalVector = tex2D(normalMap, texCoord) * 2 - 1. Client implementations should normalize the normal vectors before using them in lighting equations.
         val occlusionTexture: GltfOcclusionTextureInfo?     = null,             // The occlusion map texture. The occlusion values are sampled from the R channel. Higher values indicate areas that should receive full indirect lighting and lower values indicate no indirect lighting. These values are linear. If other channels are present (GBA), they are ignored for occlusion calculations.
         val emissiveTexture: GltfTextureInfo?               = null,             // The emissive map controls the color and intensity of the light being emitted by the material. This texture contains RGB components in sRGB color space. If a fourth component (A) is present, it is ignored.
-        val emissiveFactor: IVector3                        = Vector3(),     // The RGB components of the emissive color of the material. These values are linear. If an emissiveTexture is specified, this value is multiplied with the texel values.
+        val emissiveFactor: Vector3                        = Vector3(),     // The RGB components of the emissive color of the material. These values are linear. If an emissiveTexture is specified, this value is multiplied with the texel values.
         val alphaMode: GltfAlphaMode                        = GltfAlphaMode.OPAQUE, // The material's alpha rendering mode enumeration specifying the interpretation of the alpha value of the main factor and texture.
         val alphaCutoff: Double                             = 0.5,              // Specifies the cutoff threshold when in MASK mode. If the alpha value is greater than or equal to this value then it is rendered as fully opaque, otherwise, it is rendered as fully transparent. A value greater than 1.0 will render the entire material as fully transparent. This value is ignored for other modes.
         val doubleSided: Boolean                            = false             // Specifies whether the material is double sided. When this value is false, back-face culling is enabled. When this value is true, back-face culling is disabled and double sided lighting is enabled. The back-face must have its normals reversed before the lighting equation is evaluated.
 )
 
 data class GltfPbrMetallicRoughness(
-        val baseColorFactor: IVector4                   = Vector4(1f),  // The RGBA components of the base color of the material. The fourth component (A) is the alpha coverage of the material. The alphaMode property specifies how alpha is interpreted. These values are linear. If a baseColorTexture is specified, this value is multiplied with the texel values.
+        val baseColorFactor: Vector4                   = Vector4(1f),  // The RGBA components of the base color of the material. The fourth component (A) is the alpha coverage of the material. The alphaMode property specifies how alpha is interpreted. These values are linear. If a baseColorTexture is specified, this value is multiplied with the texel values.
         val baseColorTexture: GltfTextureInfo?          = null,         // The base color texture. This texture contains RGB(A) components in sRGB color space. The first three components (RGB) specify the base color of the material. If the fourth component (A) is present, it represents the alpha coverage of the material. Otherwise, an alpha of 1.0 is assumed. The alphaMode property specifies how alpha is interpreted. The stored texels must not be premultiplied.
         val metallicFactor: Double                      = 1.0,          // The metalness of the material. A value of 1.0 means the material is a metal. A value of 0.0 means the material is a dielectric. Values in between are for blending between metals and dielectrics such as dirty metallic surfaces. This value is linear. If a metallicRoughnessTexture is specified, this value is multiplied with the metallic texel values.
         val roughnessFactor: Double                     = 1.0,          // The roughness of the material. A value of 1.0 means the material is completely rough. A value of 0.0 means the material is completely smooth. This value is linear. If a metallicRoughnessTexture is specified, this value is multiplied with the roughness texel values.

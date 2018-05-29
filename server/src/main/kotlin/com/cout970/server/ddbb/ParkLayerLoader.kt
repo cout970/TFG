@@ -1,17 +1,7 @@
 package com.cout970.server.ddbb
 
-import com.cout970.server.rest.Defs
-import com.cout970.server.rest.Defs.Color
-import com.cout970.server.rest.Defs.Layer
-import com.cout970.server.rest.Defs.Material
-import com.cout970.server.rest.Defs.Model
-import com.cout970.server.rest.Defs.Polygon
-import com.cout970.server.rest.Defs.Rotation
-import com.cout970.server.rest.Defs.Rule
-import com.cout970.server.rest.Defs.Shape
-import com.cout970.server.rest.Defs.Shape.ShapeAtSurface
-import com.cout970.server.rest.Vector2
-import com.cout970.server.rest.Vector3
+import com.cout970.server.rest.*
+import com.cout970.server.rest.DShape.ShapeAtSurface
 import com.cout970.server.util.SceneBaker
 import com.cout970.server.util.relativize
 import com.cout970.server.util.toGeometry
@@ -25,27 +15,27 @@ import org.postgis.Point
 
 object ParkLayerLoader : ILayerLoader {
 
-    private val material = Material(
+    private val material = DMaterial(
             ambientIntensity = 0.5f,
             shininess = 0f,
-            diffuseColor = Color(0f, 0.5f, 0f),
-            emissiveColor = Color(0f, 0f, 0f),
-            specularColor = Color(1f, 1f, 1f),
+            diffuseColor = DColor(0f, 0.5f, 0f),
+            emissiveColor = DColor(0f, 0f, 0f),
+            specularColor = DColor(1f, 1f, 1f),
             transparency = 0f
     )
 
     val geometry = Cube(Dims3d(1.0, 10.0, 1.0)).toGeometry()
 
-    override fun load(area: Area): Layer {
+    override fun load(area: Area): DLayer {
         val parks = loadFromDDBB(area).filter { it.areas.isNotEmpty() }
         val shapes = parks.map { b -> shapeOf(b) }
 
         val bakedShapes = listOf(SceneBaker.bakeShapes(shapes))
 
-        return Layer(
+        return DLayer(
                 name = "Parks",
                 description = "Shows parks of the city",
-                rules = listOf(Rule(
+                rules = listOf(DRule(
                         filter = "ignore",
                         minDistance = 0f,
                         maxDistance = 2000f,
@@ -55,13 +45,13 @@ object ParkLayerLoader : ILayerLoader {
         )
     }
 
-    private fun shapeOf(b: Park): Shape {
+    private fun shapeOf(b: Park): DShape {
         return ShapeAtSurface(
-                model = Model(geometry, material),
+                model = DModel(geometry, material),
                 surface = b.areas.first(),
-                rotation = Rotation(0f, Vector3f(0f, 0f, 0f)),
+                rotation = DRotation(0f, Vector3f(0f, 0f, 0f)),
                 scale = Vector3(1f),
-                projection = Defs.GroundProjection.SnapProjection(0f),
+                projection = DGroundProjection.SnapProjection(0f),
                 resolution = 0.01f
         )
     }
@@ -90,5 +80,5 @@ object ParkLayerLoader : ILayerLoader {
         }
     }
 
-    data class Park(val areas: List<Polygon>, val name: String, val center: Vector2)
+    data class Park(val areas: List<DPolygon>, val name: String, val center: Vector2)
 }

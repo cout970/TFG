@@ -84,11 +84,11 @@ private fun GLTFBuilder.cubeMesh(node: GLTFBuilder.Node) = node.apply {
 
 // Serializer
 val GLTF_GSON = GsonBuilder()
-        .registerTypeAdapter(IVector4::class.java, Vector4Serializer())
-        .registerTypeAdapter(IVector3::class.java, Vector3Serializer())
-        .registerTypeAdapter(IVector2::class.java, Vector2Serializer())
-        .registerTypeAdapter(IQuaternion::class.java, QuaternionSerializer())
-        .registerTypeAdapter(IMatrix4::class.java, Matrix4Serializer())
+        .registerTypeAdapter(Vector4::class.java, Vector4Serializer())
+        .registerTypeAdapter(Vector3::class.java, Vector3Serializer())
+        .registerTypeAdapter(Vector2::class.java, Vector2Serializer())
+        .registerTypeAdapter(Quaternion::class.java, QuaternionSerializer())
+        .registerTypeAdapter(Matrix4::class.java, Matrix4Serializer())
         .registerTypeAdapter(GltfAccessor::class.java, AccessorSerializer)
         .registerTypeAdapter(GltfBufferView::class.java, BufferViewSerializer)
         .registerTypeAdapter(List::class.java, EmptyListAdapter)
@@ -278,11 +278,11 @@ class GLTFBuilder {
     )
 
     sealed class Transformation {
-        data class Matrix(var matrix: IMatrix4) : Transformation()
+        data class Matrix(var matrix: Matrix4) : Transformation()
         data class TRS(
-                var translation: IVector3? = null,
-                var rotation: IQuaternion? = null,
-                var scale: IVector3? = null
+                var translation: Vector3? = null,
+                var rotation: Quaternion? = null,
+                var scale: Vector3? = null
         ) : Transformation()
     }
 
@@ -296,7 +296,7 @@ class GLTFBuilder {
         children = list
     }
 
-    fun Node.transformation(mat: IMatrix4) {
+    fun Node.transformation(mat: Matrix4) {
         transformation = Transformation.Matrix(mat)
     }
 
@@ -392,12 +392,12 @@ class GLTFBuilder {
     inline fun <reified T> Primitive.buffer(type: GltfComponentType, data: List<T>): UnpackedBuffer {
         val container: GltfType = when {
             Number::class.java.isAssignableFrom(T::class.java) -> GltfType.SCALAR
-            IVector2::class.java.isAssignableFrom(T::class.java) -> GltfType.VEC2
-            IVector3::class.java.isAssignableFrom(T::class.java) -> GltfType.VEC3
-            IVector4::class.java.isAssignableFrom(T::class.java) -> GltfType.VEC4
+            Vector2::class.java.isAssignableFrom(T::class.java) -> GltfType.VEC2
+            Vector3::class.java.isAssignableFrom(T::class.java) -> GltfType.VEC3
+            Vector4::class.java.isAssignableFrom(T::class.java) -> GltfType.VEC4
 //            IMatrix2::class.java.isAssignableFrom(T::class.java) -> GltfType.MAT2
             IMatrix3::class.java.isAssignableFrom(T::class.java) -> GltfType.MAT3
-            IMatrix4::class.java.isAssignableFrom(T::class.java) -> GltfType.MAT4
+            Matrix4::class.java.isAssignableFrom(T::class.java) -> GltfType.MAT4
             else -> error("Invalid buffer type")
         }
         return UnpackedBuffer(container, type, data)
@@ -458,9 +458,9 @@ class GLTFBuilder {
 
         when (containerType) {
             GltfType.SCALAR -> (data as List<Number>).forEach(put)
-            GltfType.VEC2 -> (data as List<IVector2>).forEach { put(it.x); put(it.y) }
-            GltfType.VEC3 -> (data as List<IVector3>).forEach { put(it.x); put(it.y); put(it.z) }
-            GltfType.VEC4 -> (data as List<IVector4>).forEach { put(it.x); put(it.y); put(it.z); put(it.w) }
+            GltfType.VEC2 -> (data as List<Vector2>).forEach { put(it.x); put(it.y) }
+            GltfType.VEC3 -> (data as List<Vector3>).forEach { put(it.x); put(it.y); put(it.z) }
+            GltfType.VEC4 -> (data as List<Vector4>).forEach { put(it.x); put(it.y); put(it.z); put(it.w) }
             GltfType.MAT2, GltfType.MAT3, GltfType.MAT4 -> error("Matrix storage not supported")
         }
 

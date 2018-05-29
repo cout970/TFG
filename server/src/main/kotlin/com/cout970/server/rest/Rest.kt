@@ -57,16 +57,8 @@ object Rest {
             }
 
             post("/api/scenes") {
-                val scene = gson.fromJson(request.body(), Defs.Scene::class.java)
-                val (header, buffer) = SceneBaker.bake2(scene)
-                val name = "${UUID.randomUUID()}.gltf"
-
-                File(name).writeText(GLTF_GSON.toJson(header))
-                File(header.bufferName).writeBytes(buffer)
-
-                sceneRegistry[name] = name
-                saveScenes()
-
+                val scene = SCENE_GSON.fromJson(request.body(), DScene::class.java)
+                val name = registerScene(scene)
                 response.header("location", name)
             }
 
@@ -74,7 +66,7 @@ object Rest {
             get("/api/scene/:id") {
                 val writer = JsonWriter(OutputStreamWriter(this.response.raw().outputStream, "UTF-8"))
                 debug("Loading scene")
-                gson.toJson(scene, Defs.Scene::class.java, writer)
+                gson.toJson(scene, DScene::class.java, writer)
                 writer.close()
                 ""
             }
@@ -99,6 +91,18 @@ object Rest {
                 ""
             }
         }
+    }
+
+    fun registerScene(scene: DScene): String {
+        val (header, buffer) = SceneBaker.bake2(scene)
+        val name = "${UUID.randomUUID()}.gltf"
+
+        File(name).writeText(GLTF_GSON.toJson(header))
+        File(header.bufferName).writeBytes(buffer)
+
+        sceneRegistry[name] = name
+        saveScenes()
+        return name
     }
 
     private fun loadScenes() {

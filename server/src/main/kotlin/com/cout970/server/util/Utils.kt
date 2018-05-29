@@ -1,10 +1,7 @@
 package com.cout970.server.util
 
-import com.cout970.server.rest.Defs
-import com.cout970.server.rest.Defs.Polygon
-import com.cout970.server.rest.Defs.Shape.BakedShape
-import com.cout970.server.rest.Rest
-import com.cout970.server.rest.Vector2
+import com.cout970.server.rest.*
+import com.cout970.server.rest.DShape.BakedShape
 import com.cout970.server.terrain.TerrainLoader
 import eu.printingin3d.javascad.coords.Coords3d
 import java.util.*
@@ -26,8 +23,8 @@ fun earthToScene(pos: Pair<Float, Float>): Pair<Float, Float> {
     return -(pos.first - minX) to (pos.second - minY)
 }
 
-fun Defs.Geometry.merge(other: Defs.Geometry): Defs.Geometry {
-    val attrMap = mutableMapOf<String, Defs.BufferAttribute>()
+fun DGeometry.merge(other: DGeometry): DGeometry {
+    val attrMap = mutableMapOf<String, BufferAttribute>()
 
     attributes.forEach {
         attrMap[it.attributeName] = it
@@ -41,15 +38,15 @@ fun Defs.Geometry.merge(other: Defs.Geometry): Defs.Geometry {
         }
     }
 
-    return Defs.Geometry(attrMap.values.toList())
+    return DGeometry(attrMap.values.toList())
 }
 
-fun Defs.BufferAttribute.merge(other: Defs.BufferAttribute): Defs.BufferAttribute {
-    return Defs.BufferAttribute(attributeName, data + other.data, count)
+fun BufferAttribute.merge(other: BufferAttribute): BufferAttribute {
+    return BufferAttribute(attributeName, data + other.data, count)
 }
 
-fun Polygon.flip(): Polygon {
-    return Polygon(points.reversed())
+fun DPolygon.flip(): DPolygon {
+    return DPolygon(points.reversed())
 }
 
 fun List<Coords3d>.center(): Coords3d {
@@ -74,11 +71,11 @@ fun List<Coords3d>.center(): Coords3d {
 
 //fun BakedShape.merge(other: BakedShape): BakedShape {
 //    val geometry = this.model.geometry.merge(other.model.geometry)
-//    return BakedShape(Defs.Model(geometry, this.model.material))
+//    return BakedShape(Model(geometry, this.model.material))
 //}
 
 fun BakedShape.merge(other: BakedShape): BakedShape {
-    val map = mutableMapOf<Defs.Material, List<String>>()
+    val map = mutableMapOf<DMaterial, List<String>>()
 
     other.models.forEach { map += it.first to it.second }
 
@@ -109,7 +106,7 @@ fun areaOf(rangeX: IntRange, rangeY: IntRange): Sequence<Pair<Int, Int>> {
     return rangeX.asSequence().flatMap { x -> rangeY.asSequence().map { y -> x to y } }
 }
 
-fun List<Polygon>.toGeometry(): Defs.Geometry {
+fun List<DPolygon>.toGeometry(): DGeometry {
     val coords = flatMap { it.triangles() }.flatMap { listOf(it.x, 1f, it.y) }
 
     return MeshBuilder.buildGeometry(coords)
@@ -126,16 +123,16 @@ fun getAreaString(pos: Pair<Int, Int>): String {
     return "ST_GeomFromText('POLYGON(($minX $minY,$minX $maxY,$maxX $maxY,$maxX $minY,$minX $minY))')"
 }
 
-fun org.postgis.Polygon.toPolygon(): Polygon {
+fun org.postgis.Polygon.toPolygon(): DPolygon {
     val points = getRing(0).points.map { Vector2(it.x.toFloat(), it.y.toFloat()) }
     val holes = (2..numRings()).map { getRing(it - 1).points.map { Vector2(it.x.toFloat(), it.y.toFloat()) } }
 
-    return Polygon(points, holes)
+    return DPolygon(points, holes)
 }
 
-fun Polygon.relativize(): Polygon {
+fun DPolygon.relativize(): DPolygon {
     // .flip()
-    return Polygon(
+    return DPolygon(
             points.map { it.relativize() },
             holes.map { it.map { it.relativize() } }
     )
@@ -149,9 +146,9 @@ fun Vector2.relativize(): Vector2 {
     )
 }
 
-fun colorFromHue(hue: Float): Defs.Color {
+fun colorFromHue(hue: Float): DColor {
     val c = java.awt.Color.getHSBColor(hue, 0.5f, 1f)
-    return Defs.Color(c.red / 255f, c.green / 255f, c.blue / 255f)
+    return DColor(c.red / 255f, c.green / 255f, c.blue / 255f)
 }
 
 infix fun Int.upTo(other: Int): IntRange = this until other

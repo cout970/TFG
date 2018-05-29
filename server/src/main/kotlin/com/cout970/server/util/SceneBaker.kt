@@ -2,17 +2,9 @@ package com.cout970.server.util
 
 import com.cout970.server.glTF.GLTFBuilder
 import com.cout970.server.glTF.gltfModel
-import com.cout970.server.rest.Defs
-import com.cout970.server.rest.Defs.Geometry
-import com.cout970.server.rest.Defs.GroundProjection
-import com.cout970.server.rest.Defs.GroundProjection.*
-import com.cout970.server.rest.Defs.Rotation
-import com.cout970.server.rest.Defs.Scene
-import com.cout970.server.rest.Defs.Shape
-import com.cout970.server.rest.Defs.Shape.BakedShape
-import com.cout970.server.rest.Rest
-import com.cout970.server.rest.Vector2
-import com.cout970.server.rest.Vector3
+import com.cout970.server.rest.*
+import com.cout970.server.rest.DGroundProjection.*
+import com.cout970.server.rest.DShape.BakedShape
 import com.cout970.server.terrain.TerrainLoader
 import com.cout970.server.util.collections.FloatArrayList
 import eu.printingin3d.javascad.basic.Angle
@@ -29,7 +21,7 @@ import kotlin.math.sqrt
 
 object SceneBaker {
 
-    fun bake2(scene: Scene) = gltfModel {
+    fun bake2(scene: DScene) = gltfModel {
         bufferName = UUID.randomUUID().toString() + ".bin"
 
         scene.layers.forEach { layer ->
@@ -55,7 +47,7 @@ object SceneBaker {
         }
     }
 
-    private fun GLTFBuilder.shapeMesh(node: GLTFBuilder.Node, shape: Shape) = node.apply {
+    private fun GLTFBuilder.shapeMesh(node: GLTFBuilder.Node, shape: DShape) = node.apply {
         mesh {
             val baked = bakeShape(shape)
             baked.models.forEach { (mat, geoms) ->
@@ -75,7 +67,7 @@ object SceneBaker {
         }
     }
 
-    fun bake(scene: Scene): Scene {
+    fun bake(scene: DScene): DScene {
         val newLayers = scene.layers.map { layer ->
             val newRules = layer.rules.map { rule ->
                 val newShapes = rule.shapes.mapNotNull { shape ->
@@ -93,7 +85,7 @@ object SceneBaker {
         return scene.copy(layers = newLayers)
     }
 
-    fun bakeShapes(shapes: List<Shape>): BakedShape {
+    fun bakeShapes(shapes: List<DShape>): BakedShape {
         return shapes.parallelStream()
                 .map {
                     try {
@@ -109,15 +101,15 @@ object SceneBaker {
                 .get()
     }
 
-    fun bakeShape(shape: Shape): BakedShape = when (shape) {
+    fun bakeShape(shape: DShape): BakedShape = when (shape) {
         is BakedShape -> shape
-        is Shape.ShapeAtPoint -> bakeShapeAtPoint(shape)
-        is Shape.ShapeAtLine -> bakeShapeAtLine(shape)
-        is Shape.ShapeAtSurface -> bakeShapeAtSurface(shape)
-        is Shape.ExtrudeSurface -> bakeExtrudeShape(shape)
+        is DShape.ShapeAtPoint -> bakeShapeAtPoint(shape)
+        is DShape.ShapeAtLine -> bakeShapeAtLine(shape)
+        is DShape.ShapeAtSurface -> bakeShapeAtSurface(shape)
+        is DShape.ExtrudeSurface -> bakeExtrudeShape(shape)
     }
 
-    private fun bakeShapeAtPoint(shape: Shape.ShapeAtPoint): BakedShape {
+    private fun bakeShapeAtPoint(shape: DShape.ShapeAtPoint): BakedShape {
         val model = shape.model
 
         val newGeometry = model.geometry.transform(
@@ -130,14 +122,14 @@ object SceneBaker {
         return saveInCache(newGeometry, model.material)
     }
 
-    private fun bakeShapeAtLine(shape: Shape.ShapeAtLine): BakedShape {
+    private fun bakeShapeAtLine(shape: DShape.ShapeAtLine): BakedShape {
         val direction = (shape.lineEnd - shape.lineStart).normalize()
         val start = shape.lineStart + (direction * shape.initialGap)
 
         val line = shape.lineEnd - start
         val numPoints = sqrt(line.x * line.x + line.z * line.z).toInt()
 
-        val geometries = mutableListOf<Geometry>()
+        val geometries = mutableListOf<DGeometry>()
 
         repeat(numPoints) { i ->
             val point2d = start + (direction * shape.gap * i.toFloat())
@@ -154,9 +146,9 @@ object SceneBaker {
         return saveInCache(newGeometry, shape.model.material)
     }
 
-    private fun bakeShapeAtSurface(shape: Shape.ShapeAtSurface): BakedShape {
+    private fun bakeShapeAtSurface(shape: DShape.ShapeAtSurface): BakedShape {
         val locations = mutableListOf<Vector2>()
-        val geometries = mutableListOf<Geometry>()
+        val geometries = mutableListOf<DGeometry>()
 
         val triangles = Triangulator.triangulate(shape.surface)
 
@@ -194,7 +186,7 @@ object SceneBaker {
         return saveInCache(newGeometry, shape.model.material)
     }
 
-    private fun bakeExtrudeShape(shape: Shape.ExtrudeSurface): BakedShape {
+    private fun bakeExtrudeShape(shape: DShape.ExtrudeSurface): BakedShape {
         require(shape.surface.points.size >= 3) {
             "Polygon must have at least 3 points, it had ${shape.surface.points.size} instead"
         }
@@ -226,7 +218,7 @@ object SceneBaker {
         return saveInCache(newGeometry, shape.material)
     }
 
-    private fun project(projection: GroundProjection, points: FloatArray): FloatArray {
+    private fun project(projection: DGroundProjection, points: FloatArray): FloatArray {
 
         when (projection) {
             is DefaultGroundProjection -> {
@@ -279,7 +271,7 @@ object SceneBaker {
         return 0.5f * (-p1.y * p2.x + p0.y * (-p1.x + p2.x) + p0.x * (p1.y - p2.y) + p1.x * p2.y)
     }
 
-    private fun Geometry.transform(translation: Vector3, rotation: Rotation, scale: Vector3, projection: GroundProjection): Geometry {
+    private fun DGeometry.transform(translation: Vector3, rotation: DRotation, scale: Vector3, projection: DGroundProjection): DGeometry {
         val matrix = Matrix4f().apply {
             translate(translation)
             rotate(rotation.angle, rotation.axis)
@@ -313,7 +305,7 @@ object SceneBaker {
         return copy(attributes = newAttributes)
     }
 
-    private fun saveInCache(newGeometry: Geometry, material: Defs.Material): BakedShape {
+    private fun saveInCache(newGeometry: DGeometry, material: DMaterial): BakedShape {
         val str = UUID.randomUUID().toString()
         Rest.cacheMap[str] = newGeometry.attributes.find { it.attributeName == "position" }?.data!!
         return BakedShape(listOf(material to listOf(str)))

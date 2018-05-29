@@ -11,10 +11,10 @@ object Triangulator {
 
     fun triangulate(polygon: Polygon2d): List<Triangle2d> {
         val points = polygon.getPoints().map { Vector2(it.x.toFloat(), it.y.toFloat()) }
-        return triangulate(Defs.Polygon(points))
+        return triangulate(DPolygon(points))
     }
 
-    fun triangulate(polygon: Defs.Polygon): List<Triangle2d> {
+    fun triangulate(polygon: DPolygon): List<Triangle2d> {
         val points = polygon.points
         val data = points.flatMap { listOf(it.x, it.y) }.map { it.toDouble() }.toDoubleArray()
 

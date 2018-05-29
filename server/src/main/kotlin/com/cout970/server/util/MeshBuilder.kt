@@ -1,12 +1,12 @@
 package com.cout970.server.util
 
-import com.cout970.server.rest.Defs
-import com.cout970.server.rest.Defs.Geometry
+import com.cout970.server.rest.BufferAttribute
+import com.cout970.server.rest.DGeometry
 import kotlin.math.tanh
 
 object MeshBuilder {
 
-    fun buildGeometry(coords: List<Float>): Geometry {
+    fun buildGeometry(coords: List<Float>): DGeometry {
         val vertexData = FloatArray(coords.size)
 //        val colorData = FloatArray(coords.size)
         var ptr = 0
@@ -22,13 +22,13 @@ object MeshBuilder {
 //            colorData[ptr2++] = tanh(coords[(it * 3) + 2]) * 0.5f + 0.5f
         }
 
-        return Geometry(listOf(
-                Defs.BufferAttribute("position", vertexData, 3)
-//                Defs.BufferAttribute("color", colorData, 3)
+        return DGeometry(listOf(
+                BufferAttribute("position", vertexData, 3)
+//                BufferAttribute("color", colorData, 3)
         ))
     }
 
-    fun buildGeometry(indices: List<Int>, coords: List<Float>): Geometry {
+    fun buildGeometry(indices: List<Int>, coords: List<Float>): DGeometry {
         val vertexData = FloatArray(indices.size * 3)
         val colorData = FloatArray(indices.size * 3)
         var ptr = 0
@@ -44,9 +44,9 @@ object MeshBuilder {
             colorData[ptr2++] = tanh(coords[(it / 3) + 2]) * 0.5f + 0.5f
         }
 
-        return Geometry(listOf(
-                Defs.BufferAttribute("position", vertexData, 3),
-                Defs.BufferAttribute("color", colorData, 3)
+        return DGeometry(listOf(
+                BufferAttribute("position", vertexData, 3),
+                BufferAttribute("color", colorData, 3)
         ))
     }
 
@@ -114,8 +114,8 @@ object MeshBuilder {
 //            }
 //        }
 //        return Geometry(listOf(
-//                Defs.BufferAttribute("position", vertexData, 3),
-//                Defs.BufferAttribute("color", colorData, 3)
+//                BufferAttribute("position", vertexData, 3),
+//                BufferAttribute("color", colorData, 3)
 //        ))
 //    }
 }
