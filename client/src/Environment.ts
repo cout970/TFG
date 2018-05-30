@@ -3,7 +3,6 @@ import {
     AmbientLight,
     Color,
     DirectionalLight,
-    FontLoader,
     Group,
     OrbitControls,
     PerspectiveCamera,
@@ -13,8 +12,6 @@ import {
 } from "three";
 import {Font} from "three/three-core";
 
-const helvetiker_regular = require('./style/fonts/helvetiker_regular.typeface.json')
-
 const StatsCtr = require("stats.js")
 const OrbitControlsCtr = require("ndb-three-orbit-controls")(require("three"))
 
@@ -22,12 +19,11 @@ export default class Environment {
 
     static renderer: WebGLRenderer
     static scene: Scene
+    static externalScene: Scene
     static camera: PerspectiveCamera
     static controls: OrbitControls
     static stats: Stats
 
-    static ground: Group
-    static layers: Group
     static axis: Group
 
     static font: Font
@@ -43,6 +39,7 @@ export default class Environment {
         canvas.width = Math.floor(window.innerWidth * 0.8)
 
         this.scene = new Scene()
+        this.externalScene = new Scene()
         this.scene.add(new AmbientLight('#CCCCCC', 0.25))
 
         // let light = new PointLight(0xffffff, 0.25, 10000);
@@ -82,9 +79,7 @@ export default class Environment {
         this.controls.keys.BOTTOM = 16
 
         window.onkeydown = this.onKeyUp.bind(this)
-        let fontLoader = new FontLoader();
 
-        Environment.font = fontLoader.parse(JSON.stringify(helvetiker_regular))
 
         // On window change size
         window.addEventListener("resize", () => {
@@ -158,17 +153,9 @@ export default class Environment {
     }
 
     static setupGroups() {
-        this.ground = new Group()
-        this.ground.name = "Ground"
-
-        this.layers = new Group()
-        this.layers.name = "Layers"
-
         this.axis = new Group()
         this.axis.name = "axis"
 
-        this.scene.add(this.ground)
-        this.scene.add(this.layers)
         this.scene.add(this.axis)
     }
 

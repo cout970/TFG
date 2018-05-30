@@ -270,12 +270,8 @@ class GLTFBuilder {
             var transformation: Transformation? = null,
             var name: String? = null,
             var children: MutableList<Node>? = null,
-            var mesh: Mesh? = null
-
-//            val camera: Int? = null,                 // The index of the camera referenced by this node.
-//            val skin: Int? = null,                 // The index of the skin referenced by this node.
-
-//            val weights: List<Double> = emptyList(),          // The weights of the instantiated Morph Target. Number of elements must match number of Morph Targets of used mesh.
+            var mesh: Mesh? = null,
+            var extras: Any? = null
     )
 
     sealed class Transformation {
@@ -324,7 +320,8 @@ class GLTFBuilder {
                 rotation = (t as? Transformation.TRS)?.rotation,
                 scale = (t as? Transformation.TRS)?.scale,
                 children = bakedChildren?.map { bakedNodes.indexOf(it) } ?: emptyList(),
-                mesh = m?.let { bakedMeshes.indexOf(it) }
+                mesh = m?.let { bakedMeshes.indexOf(it) },
+                extras = extras
         )
 
         bakedNodes.add(node)

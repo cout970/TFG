@@ -19,7 +19,6 @@ val jsEngine: ScriptEngine = ScriptEngineManager().getEngineByExtension("js")
 
 fun main(args: Array<String>) {
 
-
     info("Starting...")
     val root = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
     root.level = Level.INFO

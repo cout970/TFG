@@ -28,7 +28,10 @@ object SceneBaker {
 
             node {
                 name = "terrain"
-
+                extras = mapOf(
+                        "name" to "terrain",
+                        "description" to ""
+                )
 
                 mesh {
 
@@ -43,23 +46,58 @@ object SceneBaker {
 
                 node {
                     name = layer.name
+                    extras = mapOf(
+                            "name" to layer.name,
+                            "description" to layer.description
+                    )
 
                     layer.rules.forEachIndexed { index, rule ->
 
                         node {
                             name = "rule $index"
+                            extras = mapOf(
+                                    "properties" to serializeProperties(rule.properties)
+                            )
+                            val needPosition = rule.properties.any { it is DPropertyFollowCamera }
 
-                            val models = rule.shapes.parallelStream()
-                                    .flatMap { getShapes(it).stream() }
-                                    .map { bakeShape(it) }
-                                    .toList()
-                                    .simplify()
+                            if (needPosition) {
+                                val models = rule.shapes.parallelStream()
+                                        .flatMap { getShapes(it).stream() }
+                                        .toList()
+                                        .map { bakeShape(it) }
 
-                            models.forEachIndexed { index, model ->
+                                models.forEachIndexed { index, model ->
 
-                                node {
-                                    name = "shape $index"
-                                    shapeMesh(this, model)
+                                    node {
+                                        name = "shape $index"
+
+                                        val center = model.geometry.center()
+
+                                        extras = mapOf("position" to center)
+
+                                        val newGeom = model.geometry.transform(
+                                                translation = Vector3(-center.x, 0f, -center.z),
+                                                rotation = DRotation(0f, Vector3(0f, 1f, 0f)),
+                                                scale = Vector3(1f)
+                                        )
+
+                                        shapeMesh(this, Model(newGeom, model.material))
+
+                                    }
+                                }
+                            } else {
+                                val models = rule.shapes.parallelStream()
+                                        .flatMap { getShapes(it).stream() }
+                                        .map { bakeShape(it) }
+                                        .toList()
+                                        .simplify()
+
+                                models.forEachIndexed { index, model ->
+
+                                    node {
+                                        name = "shape $index"
+                                        shapeMesh(this, model)
+                                    }
                                 }
                             }
                         }
@@ -101,6 +139,26 @@ object SceneBaker {
                 )
                 alphaMode = if (mat.opacity != 1f) GltfAlphaMode.BLEND else GltfAlphaMode.OPAQUE
                 doubleSided = false
+            }
+        }
+    }
+
+    private fun serializeProperties(props: List<DProperty>): List<Any> {
+        return props.map {
+            when (it) {
+                is DPropertyFollowCamera -> {
+                    mapOf(
+                            "type" to "follow_camera",
+                            "initialAngle" to it.initialAngle
+                    )
+                }
+                is DPropertyLOD -> {
+                    mapOf(
+                            "type" to "level_of_detail",
+                            "minDistance" to it.minDistance,
+                            "maxDistance" to it.maxDistance
+                    )
+                }
             }
         }
     }

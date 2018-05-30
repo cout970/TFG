@@ -239,7 +239,6 @@ data class DLabelShapeSource(
 sealed class DProperty
 
 data class DPropertyLOD(
-        val pos: Vector2,
         val minDistance: Float,
         val maxDistance: Float
 ) : DProperty()

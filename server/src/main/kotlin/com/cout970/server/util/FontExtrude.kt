@@ -11,7 +11,7 @@ object FontExtrude {
     fun init() {
         jsEngine.eval("""
             var fontLoader = new THREE.FontLoader();
-            var typeface = ${File("../client/src/style/fonts/helvetiker_regular.typeface.json").readText()};
+            var typeface = ${File("../client/src/style/fonts/Roboto_Regular.json").readText()};
             var default_font = fontLoader.parse(typeface);
         """.trimIndent())
     }

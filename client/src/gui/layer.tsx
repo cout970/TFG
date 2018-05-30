@@ -1,11 +1,10 @@
 import * as React from 'react'
-import {Group, Mesh, MeshPhongMaterial} from "three";
-import {Defs} from "../Definitions";
+import {Mesh, MeshStandardMaterial} from "three";
+import {Object3D} from "three/three-core";
 
 
 interface LayerProps {
-    group: Group,
-    layer: Defs.Layer
+    group: Object3D
 }
 
 interface LayerState {
@@ -28,22 +27,38 @@ export default class Layer extends React.Component<LayerProps, LayerState> {
         return name.replace(" ", "-")
     }
 
+    recursiveSetWireframe(obj: any) {
+        if (obj.hasOwnProperty("children")) {
+            obj.children.forEach(i => this.recursiveSetWireframe(i))
+        }
+
+        if (obj instanceof Mesh) {
+            if (obj.material instanceof MeshStandardMaterial) {
+                obj.material.wireframe = this.state.wireframe
+            }
+        }
+    }
+
     render() {
         this.props.group.visible = this.state.show
-        this.props.group.children.forEach(i => ((i as Mesh).material as MeshPhongMaterial).wireframe = this.state.wireframe)
+        this.recursiveSetWireframe(this.props.group)
+
+        let name = this.props.group.userData.name
+        let description = this.props.group.userData.description
+
         return (
             <tr>
                 <td>
-                    <input type="checkbox" id={Layer.fixName(this.props.layer.name)} name="checkbox"
+                    <input type="checkbox" id={Layer.fixName(name)} name="checkbox"
                            checked={this.state.show} onChange={this.toggleShow}/>
-                    <label htmlFor={Layer.fixName(this.props.layer.name)}>{this.props.layer.name}</label>
+                    <label htmlFor={Layer.fixName(name)}>{name}</label>
 
-                    <input type="checkbox" id={Layer.fixName(this.props.layer.name) + "_wire"} name="checkbox2"
+                    <input type="checkbox" id={Layer.fixName(name) + "_wire"} name="checkbox2"
                            checked={this.state.wireframe} onChange={this.toggleWireframe}/>
-                    <label htmlFor={Layer.fixName(this.props.layer.name) + "_wire"}>Wireframe</label>
+                    <label htmlFor={Layer.fixName(name) + "_wire"}>Wireframe</label>
 
                 </td>
-                <td>{this.props.layer.description}</td>
+                <td>{description}</td>
             </tr>
         )
     }

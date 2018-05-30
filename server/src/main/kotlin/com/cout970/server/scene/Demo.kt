@@ -26,8 +26,8 @@ fun createDemoScene(): DScene {
     val origin = Vector2(535909f, 4746842f)
 
     val area = DArea(
-            Vector2f(origin.x - 4000, origin.y - 4000),
-            Vector2f(8000f)
+            Vector2f(origin.x - 500, origin.y - 500),
+            Vector2f(1000f)
     )
 
     val lightModel = Cube.fromCoordinates(
@@ -104,13 +104,12 @@ fun createDemoScene(): DScene {
             projection = DefaultGroundProjection(0f, false)
     )
 
-    val streets = DExtrudeShapeSource(
-            polygonsSource = DPolygonsSource(
+    val streets = DPolygonsShapeSource(
+            geometrySource = DPolygonsSource(
                     geomField = "geom",
                     tableName = "calles",
                     area = area
             ),
-            height = 5f,
             material = DMaterial(
                     metallic = 0.0f,
                     roughness = 0.8f,
@@ -211,7 +210,7 @@ fun createDemoScene(): DScene {
                     opacity = 1.0f
             ),
             area = area,
-            gridSize = 25f
+            gridSize = 5f
     )
 
     val scene = DScene(

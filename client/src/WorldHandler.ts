@@ -1,7 +1,5 @@
-import {MeshFactory} from "./MeshFactory";
 import Environment from "./Environment";
-import {AxesHelper, Group} from "three";
-import {Defs} from "./Definitions";
+import {AxesHelper, Group, Object3D, Scene, Vector3} from "three";
 
 const GLTFLoader = require("three-gltf-loader")
 
@@ -16,8 +14,6 @@ export class WorldHandler {
             this.loadScene2(i[0])
         })
 
-        // this.get("/api/scene/0").then(i => this.loadScene(i)).catch(console.log)
-        // this.loadHeightMap()
         this.createOriginModel()
     }
 
@@ -29,11 +25,9 @@ export class WorldHandler {
         loader.load(
             `api/scene/${id}`,
             function (gltf) {
-
-                console.log(gltf)
-                // console.log(gltf.scene.userData)
-                Environment.scene.add(gltf.scene)
+                WorldHandler.processScene(gltf.scene)
                 console.log(`[Scene('${id}')] done`);
+                Environment.guiCallback()
             },
             function (xhr) {
                 if (xhr.total == 0) {
@@ -49,104 +43,42 @@ export class WorldHandler {
         );
     }
 
-    static loadArray(str: string): Promise<Float32Array> {
-        return window.fetch(`/api/binary/${str}`)
-        .then(i => i.arrayBuffer())
-        .then(j => new Float32Array(j))
-    }
+    private static processScene(scene: Scene) {
+        scene.children.forEach(layer => {
 
-    private static loadAllResources(scene: Defs.Scene): Promise<Map<string, Float32Array>> {
-        let promises = []
+            layer.children.forEach(rule => {
 
-        scene.layers.forEach(i => {
-            i.rules.forEach(j => {
-                j.shapes.forEach(k => {
-                    k.models.forEach(l => {
-                        l.second.forEach(str => {
-                            promises.push(this.loadArray(str).then(array => [str, array]))
+                let props: any[] = rule.userData.properties
+                if (props == undefined) return
+
+                props.forEach(p => {
+                    if (p.type != undefined) {
+                        this.forEachChild(rule, c => {
+                            if (c.userData.position != undefined) {
+                                let group = new Group()
+                                let parent = c.parent
+
+                                parent.add(group)
+                                parent.remove(c)
+                                group.add(c)
+
+                                console.log(c)
+
+                                group.position.x = c.userData.position[0]
+                                // group.position.y = c.userData.position[1]
+                                group.position.z = c.userData.position[2]
+                            }
                         })
-                    })
+                    }
                 })
             })
         })
-
-        return Promise.all(promises).then(array => {
-            let m = new Map<string, Float32Array>()
-            array.forEach(i => m.set(i[0], i[1]))
-            return m
-        })
-    }
-
-    private static loadScene(scene: Defs.Scene) {
-        const env = Environment
-        console.log("Loading scene...")
-        console.log(scene)
-
-        this.loadAllResources(scene).then(map => {
-            // console.log("binary data loaded")
-            // console.log(map)
-
-            let groups = scene.layers.map(layer => {
-                let group = new Group()
-                group.userData = layer
-                group.name = layer.name
-
-                layer.rules.forEach(rule => {
-                    rule.shapes.forEach(i => {
-                        let models = MeshFactory.toMeshModels(map, i.models)
-                        // console.log(models)
-                        models.forEach(i => group.add(i))
-                    })
-                })
-
-                layer.labels.forEach(label => {
-                    group.add(MeshFactory.bakeLabel(label))
-                })
-
-                return group
-            })
-            groups.forEach(group => env.layers.add(group))
-
-            let viewpoint = scene.viewPoints[0]
-            let pos = viewpoint.location
-            env.camera.position.set(pos.x, pos.y, pos.z)
-            env.controls.target.set(0, 0, -10) // TODO
-            env.controls.update()
-
-            env.guiCallback()
-            console.log("Scene loaded")
-        })
+        Environment.externalScene = scene
+        Environment.scene.add(scene)
     }
 
     private static createOriginModel() {
         Environment.axis.add(new AxesHelper(100))
-    }
-
-    private static loadHeightMap() {
-
-        // this.get(`/api/height/-8/1`)
-        // this.get(`/api/height/0/0`)
-        // .then(i => MeshFactory.fromTerrain(i))
-        // .then(i => Environment.ground.add(i))
-        // .catch(i => console.log(i))
-        //
-        // for (let i = 0; i < 2024; i++) { // 399
-        //     let pos = this.spiral(i)
-        //     // this.get(`/api/height/${pos[0] - 8}/${pos[1] + 1}`)
-        //     this.get(`/api/height/${pos[0]}/${pos[1]}`)
-        //     .then(i => MeshFactory.fromTerrain(i))
-        //     .then(i => Environment.ground.add(i))
-        //     .catch(i => console.log(i))
-        // }
-
-        for (let i = -20; i < 20; i++) { // 399
-            for (let j = -20; j < 20; j++) { // 399
-                this.get(`/api/height/${i}/${j}`)
-                .then(i => MeshFactory.fromTerrain(i))
-                .then(i => Environment.ground.add(i))
-                .catch(i => console.log(i))
-            }
-        }
     }
 
     private static get(str: string): Promise<any> {
@@ -159,107 +91,58 @@ export class WorldHandler {
     }
 
     static onTick() {
+        WorldHandler.updateLOD()
     }
 
-    //https://stackoverflow.com/questions/398299/looping-in-a-spiral
-    static spiral(n: number): Array<number> {
-        // given n an index in the squared spiral
-        // p the sum of point in inner square
-        // a the position on the current square
-        // n = p + a
+    static forEachChild(obj: Object3D, func: (Object3D) => void) {
+        obj.children.forEach(c => {
+            this.forEachChild(c, func)
+        })
 
-        let r = Math.floor((Math.sqrt(n + 1) - 1) / 2) + 1;
+        func(obj)
+    }
 
-        // compute radius : inverse arithmetic sum of 8+16+24+...=
-        let p = (8 * r * (r - 1)) / 2;
-        // compute total point on radius -1 : arithmetic sum of 8+16+24+...
+    static updateLOD() {
+        let layers = Environment.externalScene.children
+        if (layers.length == 0) return
 
-        let en = r * 2;
-        // points by face
+        layers.forEach(layer => {
+            layer.children.forEach(rule => {
+                let props: any[] = rule.userData.properties
+                if (props == undefined) return
 
-        let a = (1 + n - p) % (r * 8);
-        // compute de position and shift it so the first is (-r,-r) but (-r+1,-r)
-        // so square can connect
+                props.forEach(p => {
+                    if (p.type == "follow_camera") {
+                        let initialAngle = p.initialAngle
+                        let pos = Environment.camera.position
 
-        let pos = [0, 0, r];
-        switch (Math.floor(a / (r * 2))) {
-            // find the face : 0 top, 1 right, 2, bottom, 3 left
-            case 0: {
-                pos[0] = a - r;
-                pos[1] = -r;
-            }
-                break;
-            case 1: {
-                pos[0] = r;
-                pos[1] = (a % en) - r;
+                        pos = new Vector3(pos.x, 0, pos.z)
 
-            }
-                break;
-            case 2: {
-                pos[0] = r - (a % en);
-                pos[1] = r;
-            }
-                break;
-            case 3: {
-                pos[0] = -r;
-                pos[1] = r - (a % en);
-            }
-                break;
-        }
-        return pos;
+                        this.forEachChild(rule, c => {
+
+                            let cPos = c.position
+                            if (cPos.x != 0) {
+
+                                cPos = new Vector3(cPos.x, 0, cPos.z)
+
+                                c.children.forEach(child => {
+                                    let angle = cPos.angleTo(pos)
+
+                                    angle = Math.atan2(cPos.x-pos.x, cPos.z-pos.z)
+
+                                    child.rotation.y = angle
+                                    // child.rotation.y = degToRad(new Date().getMilliseconds() / 1000 % 360);
+                                })
+                            }
+                        })
+
+                    } else if (p.type == "level_of_detail") {
+                        let minDistance = p.minDistance
+                        let maxDistance = p.maxDistance
+
+                    }
+                })
+            })
+        })
     }
 }
-
-// for (let i = 1; i < 10; i++) { //94
-// let i = 78
-// let mun = i < 10
-//     ? `00${i}`
-//     : i < 100
-//         ? `0${i}`
-//         : `${i}`
-//
-// this.get(`/api/multiline/${mun}`)
-// .then(i => MeshFactory.modelToObjects(i))
-// .then(i => i.forEach(it => {
-//     Environment.ground.add(it)
-// }))
-// .catch(i => console.log(i))
-// }
-
-
-// this.get(`/api/camera`)
-// .then(pair => {
-//     const pos = pair.first
-//     const target = pair.second
-//
-//     Environment.camera.position.set(pos.x, pos.y, pos.z)
-//     Environment.controls.target.set(target.x, target.y, target.z)
-//     Environment.controls.update()
-// })
-
-
-// for (let x = -1; x < 0; x++) {
-//     for (let z = -1; z < 0; z++) {
-//
-//         this.get(`/api/buildings2/${x}/${z}`)
-//         .then(i => {
-//             console.log(i);
-//             return MeshFactory.toMeshGeometry(i)
-//         })
-//         .then(i => Environment.buildings.add(i))
-//         .catch(i => console.log(i))
-//     }
-// }
-
-// for (let x = -5; x < 0; x++) {
-//     for (let z = -5; z < 0; z++) {
-//
-//         this.get(`/api/streets/${x}/${z}`)
-//         .then(i => MeshFactory.modelToObjects(i))
-//         .then(i => i.forEach(it => {
-//             Environment.streets.add(it)
-//         }))
-//         .catch(i => console.log(i))
-//     }
-//
-// }
