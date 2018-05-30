@@ -521,13 +521,5 @@ class GLTFBuilder {
             var alphaCutoff: Double = 0.5,
             var doubleSided: Boolean = false
     )
-
-
-//    val animations: List<Animation> = emptyList(),  // An array of keyframe animations.
-//    val cameras: List<Camera> = emptyList(),  // An array of cameras. A camera defines a projection matrix.
-//    val images: List<Image> = emptyList(),  // An array of images. An image defines data used to create a texture.
-//    val samplers: List<Sampler> = emptyList(),  // An array of samplers. A sampler contains properties for texture filtering and wrapping modes.
-//    val skins: List<Skin> = emptyList(),  // An array of skins. A skin is defined by joints and matrices.
-//    val textures: List<Texture> = emptyList(),  // An array of textures.
 }
 

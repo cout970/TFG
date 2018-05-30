@@ -6,14 +6,19 @@ import com.cout970.server.ddbb.DDBBManager
 import com.cout970.server.rest.Rest.httpServer
 import com.cout970.server.scene.bakeScene
 import com.cout970.server.terrain.TerrainLoader
+import com.cout970.server.util.FontExtrude
 import com.cout970.server.util.info
 import org.slf4j.LoggerFactory
 import java.io.File
 import java.util.*
+import javax.script.ScriptEngine
+import javax.script.ScriptEngineManager
 import kotlin.system.measureTimeMillis
 
+val jsEngine: ScriptEngine = ScriptEngineManager().getEngineByExtension("js")
 
 fun main(args: Array<String>) {
+
 
     info("Starting...")
     val root = LoggerFactory.getLogger(Logger.ROOT_LOGGER_NAME) as Logger
@@ -30,6 +35,11 @@ fun main(args: Array<String>) {
         return
     }
     info("Done: DDBB connection")
+
+    info("Loading THREE")
+    jsEngine.eval(File("three.min.js").reader())
+    FontExtrude.init()
+    info("Done: THREE")
 
     info("Loading height maps")
     var error = false

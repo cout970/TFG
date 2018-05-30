@@ -40,6 +40,24 @@ fun createDemoScene(): DScene {
 
     val parkModel = Cube(Dims3d(1.0, 10.0, 1.0)).toGeometry()
 
+    val schoolLabels = DLabelShapeSource(
+            labelSource = DLabelSource(
+                    geomField = "geom",
+                    textField = "nombre",
+                    tableName = "centros de enseñanza (polígono)",
+                    area = area
+            ),
+            scale = 8f,
+            material = DMaterial(
+                    metallic = 0.5f,
+                    roughness = 0.5f,
+                    diffuseColor = DColor(1f, 1f, 1f),
+                    emissiveColor = DColor(1f, 1f, 1f),
+                    opacity = 1f
+            ),
+            projection = DefaultGroundProjection(50f, false)
+    )
+
     val schools = DExtrudeShapeSource(
             polygonsSource = DPolygonsSource(
                     geomField = "geom",
@@ -48,11 +66,11 @@ fun createDemoScene(): DScene {
             ),
             height = 25f,
             material = DMaterial(
-                    ambientIntensity = 0.5f,
-                    shininess = 0.0f,
+                    metallic = 0.0f,
+                    roughness = 0.0f,
                     diffuseColor = colorFromHue(180f / 360f),
                     emissiveColor = DColor(0f, 0f, 0f),
-                    transparency = 0.65f
+                    opacity = 0.35f
             ),
             projection = DefaultGroundProjection(0f, false)
     )
@@ -64,11 +82,11 @@ fun createDemoScene(): DScene {
             ),
             resolution = 0.01f,
             material = DMaterial(
-                    ambientIntensity = 0.5f,
-                    shininess = 0f,
+                    metallic = 0.0f,
+                    roughness = 0.5f,
                     diffuseColor = DColor(0f, 0.5f, 0f),
                     emissiveColor = DColor(0f, 0f, 0f),
-                    transparency = 0f
+                    opacity = 1f
             ),
             projection = DefaultGroundProjection(0f, false)
     )
@@ -77,11 +95,11 @@ fun createDemoScene(): DScene {
             points = DPointSource("geom", "puntos de luz", area),
             geometrySource = DInlineSource(lightModel),
             material = DMaterial(
-                    ambientIntensity = 0.5f,
-                    shininess = 0f,
+                    metallic = 0.1f,
+                    roughness = 0.3f,
                     diffuseColor = DColor(1f, 1f, 0.0f),
                     emissiveColor = DColor(0.1f, 0.1f, 0.1f),
-                    transparency = 0f
+                    opacity = 1f
             ),
             projection = DefaultGroundProjection(0f, false)
     )
@@ -94,11 +112,11 @@ fun createDemoScene(): DScene {
             ),
             height = 5f,
             material = DMaterial(
-                    ambientIntensity = 0.5f,
-                    shininess = 0f,
+                    metallic = 0.0f,
+                    roughness = 0.8f,
                     diffuseColor = colorFromHue(63.1f / 360f),
                     emissiveColor = DColor(0f, 0f, 0f),
-                    transparency = 0f
+                    opacity = 1f
             ),
             projection = SnapProjection(1.0f)
     )
@@ -112,22 +130,31 @@ fun createDemoScene(): DScene {
                     area = area
             ),
             material = DMaterial(
-                    ambientIntensity = 0.5f,
-                    shininess = 0f,
+                    metallic = 0.0f,
+                    roughness = 0.75f,
                     diffuseColor = colorFromHue(273.1f / 360f),
                     emissiveColor = DColor(0f, 0f, 0f),
-                    transparency = 0f
+                    opacity = 1f
             ),
             projection = DefaultGroundProjection(1f, false)
     )
 
-    val schoolsLayer = DLayer(
-            name = "Parks",
+    val schoolsLabelsLayer = DLayer(
+            name = "School names",
             description = "Description",
             rules = listOf(DRule(
-                    filter = "none",
-                    minDistance = 0f,
-                    maxDistance = 10f,
+                    properties = listOf(
+                            DPropertyFollowCamera(0f)
+                    ),
+                    shapes = listOf(schoolLabels)
+            ))
+    )
+
+    val schoolsLayer = DLayer(
+            name = "Schools",
+            description = "Description",
+            rules = listOf(DRule(
+                    properties = emptyList(),
                     shapes = listOf(schools)
             ))
     )
@@ -136,9 +163,7 @@ fun createDemoScene(): DScene {
             name = "Parks",
             description = "Description",
             rules = listOf(DRule(
-                    filter = "none",
-                    minDistance = 0f,
-                    maxDistance = 10f,
+                    properties = emptyList(),
                     shapes = listOf(parks)
             ))
     )
@@ -147,9 +172,7 @@ fun createDemoScene(): DScene {
             name = "Lights",
             description = "Description",
             rules = listOf(DRule(
-                    filter = "none",
-                    minDistance = 0f,
-                    maxDistance = 10f,
+                    properties = emptyList(),
                     shapes = listOf(lights)
             ))
     )
@@ -158,9 +181,7 @@ fun createDemoScene(): DScene {
             name = "Streets",
             description = "Description",
             rules = listOf(DRule(
-                    filter = "none",
-                    minDistance = 0f,
-                    maxDistance = 10f,
+                    properties = emptyList(),
                     shapes = listOf(streets)
             ))
     )
@@ -169,9 +190,7 @@ fun createDemoScene(): DScene {
             name = "Buildings",
             description = "Description",
             rules = listOf(DRule(
-                    filter = "none",
-                    minDistance = 0f,
-                    maxDistance = 10f,
+                    properties = emptyList(),
                     shapes = listOf(buildings)
             ))
     )
@@ -185,11 +204,11 @@ fun createDemoScene(): DScene {
     val ground = DGround(
             file = "../data/GaliciaDTM25m.tif",
             material = DMaterial(
-                    ambientIntensity = 0.0f,
-                    shininess = 0f,
+                    metallic = 0.0f,
+                    roughness = 0.5f,
                     diffuseColor = DColor(0.0f, 1.0f, 0.0f),
                     emissiveColor = DColor(0f, 0f, 0f),
-                    transparency = 0.0f
+                    opacity = 1.0f
             ),
             area = area,
             gridSize = 25f
@@ -199,7 +218,7 @@ fun createDemoScene(): DScene {
             title = "Demo scene",
             abstract = "A demo scene showing the base components of a scene",
             viewPoints = listOf(mainViewPoint),
-            layers = listOf(buildingLayer, streetLayer, lightsLayer, parksLayer, schoolsLayer),
+            layers = listOf(buildingLayer, streetLayer, lightsLayer, parksLayer, schoolsLayer, schoolsLabelsLayer),
             ground = ground,
             origin = origin
     )

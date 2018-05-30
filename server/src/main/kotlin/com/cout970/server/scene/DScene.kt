@@ -53,11 +53,11 @@ data class DArea(
 )
 
 data class DMaterial(
-        val ambientIntensity: Float,
-        val shininess: Float,
+        val metallic: Float,
+        val roughness: Float,
         val diffuseColor: DColor,
         val emissiveColor: DColor,
-        val transparency: Float
+        val opacity: Float
 )
 
 // Geomtries
@@ -116,6 +116,13 @@ data class DPointSource(
         val area: DArea
 )
 
+data class DLabelSource(
+        val geomField: String,
+        val textField: String,
+        val tableName: String,
+        val area: DArea
+)
+
 // Terrain Projection
 
 sealed class DGroundProjection
@@ -163,9 +170,17 @@ data class ShapeAtSurface(
         val projection: DGroundProjection
 ) : DShape()
 
-data class ExtrudeSurface(
+data class ShapeExtrudeSurface(
         val surface: DPolygon,
         val height: Float,
+        val material: DMaterial,
+        val projection: DGroundProjection
+) : DShape()
+
+data class ShapeLabel(
+        val txt: String,
+        val position: Vector2,
+        val scale: Float,
         val material: DMaterial,
         val projection: DGroundProjection
 ) : DShape()
@@ -212,27 +227,38 @@ data class DPolygonsShapeSource(
         val projection: DGroundProjection
 ) : DShapeSource()
 
-// Layers and render rules
+data class DLabelShapeSource(
+        val labelSource: DLabelSource,
+        val scale: Float,
+        val material: DMaterial,
+        val projection: DGroundProjection
+) : DShapeSource()
 
+// Render rules
+
+sealed class DProperty
+
+data class DPropertyLOD(
+        val pos: Vector2,
+        val minDistance: Float,
+        val maxDistance: Float
+) : DProperty()
+
+data class DPropertyFollowCamera(
+        val initialAngle: Float
+) : DProperty()
 
 data class DRule(
-        val filter: String,
-        val minDistance: Float,
-        val maxDistance: Float,
+        val properties: List<DProperty>,
         val shapes: List<DShapeSource>
 )
+
+// Layers
 
 data class DLayer(
         val name: String,
         val description: String,
         val rules: List<DRule>
-)
-
-// TODO keep this?
-data class DLabel(
-        val txt: String,
-        val position: Vector3,
-        val scale: Double
 )
 
 // Ground elevation files

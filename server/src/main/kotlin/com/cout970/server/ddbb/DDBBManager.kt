@@ -58,7 +58,7 @@ object DDBBManager {
         info("Query finished in (${System.currentTimeMillis() - start}ms)")
     }
 
-    fun loadPolygons(geomField: String, tableName: String, area: Area): List<PolygonGroup> {
+    fun loadPolygons(geomField: String, tableName: String, area: String): List<PolygonGroup> {
         val sql = """
                 SELECT $geomField
                 FROM "$tableName", $area AS area
@@ -74,7 +74,7 @@ object DDBBManager {
         }
     }
 
-    fun loadExtrudedPolygons(geomField: String, heightField: String, tableName: String, heightScale: Float, area: Area): List<ExtrudePolygonGroup> {
+    fun loadExtrudedPolygons(geomField: String, heightField: String, tableName: String, heightScale: Float, area: String): List<ExtrudePolygonGroup> {
         val sql = """
                 SELECT $geomField, $heightField
                 FROM "$tableName", $area AS area
@@ -94,16 +94,16 @@ object DDBBManager {
         }
     }
 
-    fun loadLabels(geomField: String, tableName: String, area: Area): List<Label> {
+    fun loadLabels(geomField: String, nameField: String, tableName: String, area: String): List<Label> {
         val sql = """
-                SELECT name, center
+                SELECT $nameField, center
                 FROM "$tableName", $area AS area, ST_Centroid($geomField) as center
                 WHERE ST_Within($geomField, area);
                       """
 
         return DDBBManager.load(sql) {
 
-            val name = it.getString("name")
+            val name = it.getString(nameField)
             val centerGeom = it.getObject("center") as PGgeometry
             val center = centerGeom.geometry as Point
 
@@ -114,7 +114,7 @@ object DDBBManager {
         }
     }
 
-    fun loadPoints(geomField: String, tableName: String, area: Area): List<Vector2> {
+    fun loadPoints(geomField: String, tableName: String, area: String): List<Vector2> {
         val sql = """
                 SELECT geom
                 FROM "$tableName", $area AS area

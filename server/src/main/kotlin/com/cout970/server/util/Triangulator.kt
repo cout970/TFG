@@ -5,6 +5,7 @@ import com.cout970.server.glTF.Vector3
 import com.cout970.server.scene.DPolygon
 import com.cout970.server.scene.Polygon3d
 import com.cout970.server.scene.Triangle2d
+import com.cout970.server.util.Earcut.earcut
 import eu.printingin3d.javascad.coords.Coords3d
 import eu.printingin3d.javascad.coords.Triangle3d
 import eu.printingin3d.javascad.coords2d.Coords2d
@@ -22,7 +23,7 @@ object Triangulator {
         val points = polygon.points
         val data = points.flatMap { listOf(it.x, it.y) }.map { it.toDouble() }.toDoubleArray()
 
-        val indices = Earcut.earcut(data)
+        val indices = earcut(data)
         val triangles = mutableListOf<Triangle2d>()
 
         repeat(indices.size / 3) { i ->

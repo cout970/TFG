@@ -16,6 +16,7 @@ import eu.printingin3d.javascad.vrl.FacetGenerationContext
 import org.joml.Matrix4f
 import org.joml.Vector4f
 import kotlin.math.sqrt
+import kotlin.streams.toList
 
 object SceneBaker {
 
@@ -31,17 +32,10 @@ object SceneBaker {
 
                 mesh {
 
-                    val material = DMaterial(
-                            ambientIntensity = 0.0f,
-                            shininess = 0f,
-                            diffuseColor = DColor(0.0f, 1.0f, 0.0f),
-                            emissiveColor = DColor(0f, 0f, 0f),
-                            transparency = 0.0f
-                    )
                     val geom = generateTerrainMesh(scene.origin, scene.ground.area, scene.ground.gridSize)
                             .project(SnapProjection(0f))
 
-                    setGeometry(this, geom, material)
+                    setGeometry(this, geom, scene.ground.material)
                 }
             }
 
@@ -55,7 +49,11 @@ object SceneBaker {
                         node {
                             name = "rule $index"
 
-                            val models = rule.shapes.flatMap { getShapes(it).map { bakeShape(it) }.simplify() }
+                            val models = rule.shapes.parallelStream()
+                                    .flatMap { getShapes(it).stream() }
+                                    .map { bakeShape(it) }
+                                    .toList()
+                                    .simplify()
 
                             models.forEachIndexed { index, model ->
 
@@ -96,14 +94,13 @@ object SceneBaker {
 
             material {
                 emissiveFactor = mat.emissiveColor.toVector()
-                alphaMode = if (mat.transparency != 0f) GltfAlphaMode.BLEND else GltfAlphaMode.OPAQUE
-                doubleSided = false
-
                 pbrMetallicRoughness = GltfPbrMetallicRoughness(
-                        baseColorFactor = Vector4f(mat.diffuseColor.r, mat.diffuseColor.g, mat.diffuseColor.b, 1f - mat.transparency),
-                        metallicFactor = 0.0,
-                        roughnessFactor = 1.0 - mat.shininess
+                        baseColorFactor = Vector4f(mat.diffuseColor.r, mat.diffuseColor.g, mat.diffuseColor.b, mat.opacity),
+                        metallicFactor = mat.metallic.toDouble(),
+                        roughnessFactor = mat.roughness.toDouble()
                 )
+                alphaMode = if (mat.opacity != 1f) GltfAlphaMode.BLEND else GltfAlphaMode.OPAQUE
+                doubleSided = false
             }
         }
     }
@@ -117,6 +114,7 @@ object SceneBaker {
         is DPolygonsShapeSource -> getShapes(source)
         is DShapeAtSurfaceSource -> getShapes(source)
         is DExtrudeShapeSource -> getShapes(source)
+        is DLabelShapeSource -> getShapes(source)
     }
 
     fun getShapes(source: DExtrudedShapeSource): List<DShape> {
@@ -125,7 +123,7 @@ object SceneBaker {
 
         return geoms.flatMap { epg ->
             epg.polygons.map { poly ->
-                ExtrudeSurface(
+                ShapeExtrudeSurface(
                         surface = poly,
                         height = epg.height,
                         material = source.material,
@@ -188,13 +186,28 @@ object SceneBaker {
 
         return geoms.flatMap { epg ->
             epg.polygons.map { poly ->
-                ExtrudeSurface(
+                ShapeExtrudeSurface(
                         surface = poly,
                         height = source.height,
                         material = source.material,
                         projection = source.projection
                 )
             }
+        }
+    }
+
+    fun getShapes(source: DLabelShapeSource): List<DShape> {
+        val src = source.labelSource
+        val labels = DDBBManager.loadLabels(src.geomField, src.textField, src.tableName, src.area.toSQL())
+
+        return labels.map { label ->
+            ShapeLabel(
+                    txt = label.text,
+                    position = label.pos,
+                    scale = source.scale,
+                    material = source.material,
+                    projection = source.projection
+            )
         }
     }
 
@@ -206,17 +219,18 @@ object SceneBaker {
                 is ShapeAtPoint -> bakeShapeAtPoint(shape)
                 is ShapeAtLine -> bakeShapeAtLine(shape)
                 is ShapeAtSurface -> bakeShapeAtSurface(shape)
-                is ExtrudeSurface -> bakeExtrudeShape(shape)
+                is ShapeExtrudeSurface -> bakeExtrudeShape(shape)
+                is ShapeLabel -> bakeLabel(shape)
             }
         } catch (e: Exception) {
 
             return Model(
                     material = DMaterial(
-                            ambientIntensity = 0.5f,
+                            metallic = 0f,
+                            roughness = 0.5f,
                             diffuseColor = DColor(1f, 1f, 1f),
                             emissiveColor = DColor(0f, 0f, 0f),
-                            shininess = 1f,
-                            transparency = 0f
+                            opacity = 1.0f
                     ),
                     geometry = Cube(10.0).toGeometry().bake()
             )
@@ -299,7 +313,7 @@ object SceneBaker {
         return Model(newGeometry, shape.material)
     }
 
-    private fun bakeExtrudeShape(shape: ExtrudeSurface): Model {
+    private fun bakeExtrudeShape(shape: ShapeExtrudeSurface): Model {
         val surface = shape.surface
         require(surface.points.size >= 3) {
             "Polygon must have at least 3 points, it had ${surface.points.size} instead"
@@ -308,6 +322,20 @@ object SceneBaker {
         val newGeometry = extrude(surface, shape.height).bake().project(projection = shape.projection)
 
         return Model(newGeometry, shape.material)
+    }
+
+    private fun bakeLabel(label: ShapeLabel): Model {
+
+        val geom = FontExtrude.extrudeLabel(label.txt, label.scale.toDouble())
+        val center = geom.center()
+
+        val translation = DTransformGeometry(
+                translation = Vector3(label.position.x - center.x, 0f, label.position.y - center.z),
+                source = geom
+        )
+        val newGeometry = translation.bake().project(label.projection)
+
+        return Model(newGeometry, label.material)
     }
 
     // Geometry accessors
@@ -421,12 +449,12 @@ object SceneBaker {
 
                 if (projection.top) {
                     points.indices.windowed(3, 3).forEach { i ->
-                        points[i[1]] += max
+                        points[i[1]] += max + projection.elevation
                     }
 
                 } else {
                     points.indices.windowed(3, 3).forEach { i ->
-                        points[i[1]] += min
+                        points[i[1]] += min + projection.elevation
                     }
                 }
             }

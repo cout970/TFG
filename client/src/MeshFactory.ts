@@ -32,6 +32,10 @@ export class MeshFactory {
             bevelSize: 8
         });
 
+        let bufferGeometry = new BufferGeometry()
+        bufferGeometry.fromGeometry(geometry)
+        bufferGeometry.attributes
+
         let material = new MeshPhongMaterial({
             color: "#FFF",
         })

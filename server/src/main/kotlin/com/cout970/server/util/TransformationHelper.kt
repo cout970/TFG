@@ -1,6 +1,7 @@
 package com.cout970.server.util
 
 import com.cout970.server.glTF.Vector2
+import com.cout970.server.glTF.Vector3
 import com.cout970.server.scene.DBufferGeometry
 import com.cout970.server.scene.GeometryBuilder
 import eu.printingin3d.javascad.coords.Triangle3d
@@ -37,7 +38,7 @@ fun Polygon2D.triangles(): List<Vector2> {
 
     val list = mutableListOf<Vector2>()
 
-    indices.windowed(3,3).forEach {
+    indices.windowed(3, 3).forEach {
         list += points[it[2]]
         list += points[it[1]]
         list += points[it[0]]
@@ -45,3 +46,37 @@ fun Polygon2D.triangles(): List<Vector2> {
 
     return list
 }
+
+fun DBufferGeometry.max(): Vector3 {
+    val data = attributes[0].data
+    val max = Vector3()
+
+    for (i in data.indices) {
+        val mod = i % 3
+        when (mod) {
+            0 -> max.x = Math.max(max.x, data[i])
+            1 -> max.y = Math.max(max.y, data[i])
+            else -> max.z = Math.max(max.z, data[i])
+        }
+    }
+
+    return max
+}
+
+fun DBufferGeometry.min(): Vector3 {
+    val data = attributes[0].data
+    val min = Vector3()
+
+    for (i in data.indices) {
+        val mod = i % 3
+        when (mod) {
+            0 -> min.x = Math.min(min.x, data[i])
+            1 -> min.y = Math.min(min.y, data[i])
+            else -> min.z = Math.min(min.z, data[i])
+        }
+    }
+
+    return min
+}
+
+fun DBufferGeometry.center() = (max() - min()) * 0.5f + min()
