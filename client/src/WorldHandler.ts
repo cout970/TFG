@@ -53,22 +53,27 @@ export class WorldHandler {
 
                 props.forEach(p => {
                     if (p.type != undefined) {
-                        this.forEachChild(rule, c => {
-                            if (c.userData.position != undefined) {
+
+                        let newChilds = rule.children.map(mesh => {
+                            if (mesh.userData.position != undefined) {
+
                                 let group = new Group()
-                                let parent = c.parent
+                                let newMesh = mesh.clone(true)
 
-                                parent.add(group)
-                                parent.remove(c)
-                                group.add(c)
+                                group.add(newMesh)
 
-                                console.log(c)
-
-                                group.position.x = c.userData.position[0]
-                                // group.position.y = c.userData.position[1]
-                                group.position.z = c.userData.position[2]
+                                group.position.x = mesh.userData.position[0]
+                                group.position.z = mesh.userData.position[2]
+                                return group
+                            } else {
+                                return mesh.clone(true)
                             }
                         })
+
+                        while (rule.children.length > 0) {
+                            rule.remove(rule.children[0])
+                        }
+                        newChilds.forEach(c => rule.add(c))
                     }
                 })
             })
@@ -95,6 +100,7 @@ export class WorldHandler {
     }
 
     static forEachChild(obj: Object3D, func: (Object3D) => void) {
+
         obj.children.forEach(c => {
             this.forEachChild(c, func)
         })
@@ -106,6 +112,7 @@ export class WorldHandler {
         let layers = Environment.externalScene.children
         if (layers.length == 0) return
 
+
         layers.forEach(layer => {
             layer.children.forEach(rule => {
                 let props: any[] = rule.userData.properties
@@ -113,29 +120,13 @@ export class WorldHandler {
 
                 props.forEach(p => {
                     if (p.type == "follow_camera") {
-                        let initialAngle = p.initialAngle
                         let pos = Environment.camera.position
 
                         pos = new Vector3(pos.x, 0, pos.z)
 
-                        this.forEachChild(rule, c => {
-
-                            let cPos = c.position
-                            if (cPos.x != 0) {
-
-                                cPos = new Vector3(cPos.x, 0, cPos.z)
-
-                                c.children.forEach(child => {
-                                    let angle = cPos.angleTo(pos)
-
-                                    angle = Math.atan2(cPos.x-pos.x, cPos.z-pos.z)
-
-                                    child.rotation.y = angle
-                                    // child.rotation.y = degToRad(new Date().getMilliseconds() / 1000 % 360);
-                                })
-                            }
+                        rule.children.forEach(c => {
+                            c.lookAt(pos)
                         })
-
                     } else if (p.type == "level_of_detail") {
                         let minDistance = p.minDistance
                         let maxDistance = p.maxDistance

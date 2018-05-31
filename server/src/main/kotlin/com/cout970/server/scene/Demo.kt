@@ -143,7 +143,7 @@ fun createDemoScene(): DScene {
             description = "Description",
             rules = listOf(DRule(
                     properties = listOf(
-                            DPropertyFollowCamera(0f)
+                            DPropertyFollowCamera
                     ),
                     shapes = listOf(schoolLabels)
             ))

@@ -71,18 +71,13 @@ object SceneBaker {
                                     node {
                                         name = "shape $index"
 
-                                        val center = model.geometry.center()
+                                        val geom = model.geometry
+                                        val pos = (geom as? DTransformGeometry)?.translation ?: Vector3()
+                                        val dGeom = (geom as? DTransformGeometry)?.source ?: geom
 
-                                        extras = mapOf("position" to center)
+                                        extras = mapOf("position" to pos)
 
-                                        val newGeom = model.geometry.transform(
-                                                translation = Vector3(-center.x, 0f, -center.z),
-                                                rotation = DRotation(0f, Vector3(0f, 1f, 0f)),
-                                                scale = Vector3(1f)
-                                        )
-
-                                        shapeMesh(this, Model(newGeom, model.material))
-
+                                        shapeMesh(this, Model(dGeom, model.material))
                                     }
                                 }
                             } else {
@@ -110,7 +105,7 @@ object SceneBaker {
     private fun GLTFBuilder.shapeMesh(node: GLTFBuilder.Node, model: Model) = node.apply {
         mesh {
 
-            setGeometry(this, model.geometry, model.material)
+            setGeometry(this, model.geometry.bake(), model.material)
         }
     }
 
@@ -148,8 +143,7 @@ object SceneBaker {
             when (it) {
                 is DPropertyFollowCamera -> {
                     mapOf(
-                            "type" to "follow_camera",
-                            "initialAngle" to it.initialAngle
+                            "type" to "follow_camera"
                     )
                 }
                 is DPropertyLOD -> {
@@ -387,13 +381,22 @@ object SceneBaker {
         val geom = FontExtrude.extrudeLabel(label.txt, label.scale.toDouble())
         val center = geom.center()
 
-        val translation = DTransformGeometry(
+        val moved = DTransformGeometry(
                 translation = Vector3(label.position.x - center.x, 0f, label.position.y - center.z),
                 source = geom
         )
-        val newGeometry = translation.bake().project(label.projection)
 
-        return Model(newGeometry, label.material)
+        val newGeometry = DTransformGeometry(
+                translation = Vector3(-label.position.x, 0f, -label.position.y),
+                source = moved.bake().project(label.projection)
+        ).bake()
+
+        val finalGeom = DTransformGeometry(
+                translation = Vector3(label.position.x, 0f, label.position.y),
+                source = newGeometry
+        )
+
+        return Model(finalGeom, label.material)
     }
 
     // Geometry accessors
@@ -626,7 +629,7 @@ object SceneBaker {
             val geom = it.value
                     .parallelStream()
                     .map { it.geometry }
-                    .reduce { acc, geometry -> acc.merge(geometry) }
+                    .reduce { acc, geometry -> acc.bake().merge(geometry.bake()) }
 
             Model(geom.get(), it.key)
         }

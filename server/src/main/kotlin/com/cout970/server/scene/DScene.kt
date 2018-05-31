@@ -12,7 +12,7 @@ data class Triangle2d(
 )
 
 data class Model(
-        val geometry: DBufferGeometry,
+        val geometry: DGeometry,
         val material: DMaterial
 )
 
@@ -243,9 +243,7 @@ data class DPropertyLOD(
         val maxDistance: Float
 ) : DProperty()
 
-data class DPropertyFollowCamera(
-        val initialAngle: Float
-) : DProperty()
+object DPropertyFollowCamera : DProperty()
 
 data class DRule(
         val properties: List<DProperty>,
