@@ -36,7 +36,7 @@ fun main(args: Array<String>) {
     info("Done: DDBB connection")
 
     info("Loading THREE")
-    jsEngine.eval(File("three.min.js").reader())
+    jsEngine.eval(Thread.currentThread().contextClassLoader.getResourceAsStream("three.min.js").reader())
     FontExtrude.init()
     info("Done: THREE")
 
