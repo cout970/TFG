@@ -2,6 +2,7 @@ package com.cout970.server.scene
 
 import com.cout970.server.glTF.GLTF_GSON
 import com.cout970.server.glTF.Vector2
+import com.cout970.server.glTF.Vector3
 import com.cout970.server.rest.Rest
 import com.cout970.server.util.colorFromHue
 import com.cout970.server.util.debug
@@ -10,7 +11,6 @@ import eu.printingin3d.javascad.coords.Coords3d
 import eu.printingin3d.javascad.coords.Dims3d
 import eu.printingin3d.javascad.models.Cube
 import org.joml.Vector2f
-import org.joml.Vector3f
 import java.io.File
 
 lateinit var scene: DScene
@@ -88,7 +88,7 @@ fun createDemoScene(): DScene {
                     emissiveColor = DColor(0f, 0f, 0f),
                     opacity = 1f
             ),
-            projection = DefaultGroundProjection(0f, false)
+            projection = DefaultGroundProjection(5f, false)
     )
 
     val lights = DShapeAtPointSource(
@@ -104,12 +104,13 @@ fun createDemoScene(): DScene {
             projection = DefaultGroundProjection(0f, false)
     )
 
-    val streets = DPolygonsShapeSource(
-            geometrySource = DPolygonsSource(
+    val streets = DExtrudeShapeSource(
+            polygonsSource = DPolygonsSource(
                     geomField = "geom",
                     tableName = "calles",
                     area = area
             ),
+            height = 5f,
             material = DMaterial(
                     metallic = 0.0f,
                     roughness = 0.8f,
@@ -117,7 +118,7 @@ fun createDemoScene(): DScene {
                     emissiveColor = DColor(0f, 0f, 0f),
                     opacity = 1f
             ),
-            projection = SnapProjection(1.0f)
+            projection = SnapProjection(-4.0f)
     )
 
     val buildings = DExtrudedShapeSource(
@@ -195,8 +196,8 @@ fun createDemoScene(): DScene {
     )
 
     val mainViewPoint = DViewPoint(
-            location = Vector3f(0f, 800f, 0f),
-            orientation = DRotation(0f, Vector3f(0f, 0f, 0f)),
+            location = Vector3(-6.6f, 213.1f, -31.6f),
+            orientation = Vector3(0.066f, 0.427f, 0.901f),
             camera = DCameraType.PERSPECTIVE
     )
 

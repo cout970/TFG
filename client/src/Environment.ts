@@ -156,6 +156,15 @@ export default class Environment {
                 this.camera.position.sub(perpendicular)
                 this.controls.update()
             }
+        } else if (event.which == 80) {
+
+            let pos = this.camera.position
+            let target = this.controls.target
+
+            let dir = target.clone().sub(pos).normalize()
+
+            console.log(pos)
+            console.log(dir)
         }
     }
 

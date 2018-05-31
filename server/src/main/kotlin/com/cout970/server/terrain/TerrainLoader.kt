@@ -1,8 +1,8 @@
 package com.cout970.server.terrain
 
 import com.cout970.server.glTF.Vector2
+import com.cout970.server.scene.DScene
 import com.cout970.server.util.areaOf
-import com.cout970.server.util.info
 import com.cout970.server.util.upTo
 import org.geotools.coverage.grid.GridCoverage2D
 import org.geotools.gce.geotiff.GeoTiffReader
@@ -19,8 +19,6 @@ import kotlin.streams.toList
 object TerrainLoader {
 
     val ORIGIN = Vector3f(535909f, 0f, 4746842f)
-
-    lateinit var tmpTerrainView: TerrainView
 
     class TerrainFile(
             val origin: Vector2,
@@ -81,39 +79,16 @@ object TerrainLoader {
     }
 
     class TerrainView(
-            val sector: TerrainSector,
+            val sector: TerrainLoader.TerrainSector,
             val offset: Vector2,
             val scale: Float
     )
 
-    fun createView(sector: TerrainSector, origin: Vector2): TerrainView {
+    private fun createView(sector: TerrainLoader.TerrainSector, origin: Vector2): TerrainView {
         val x = origin.x - sector.origin.x
         val y = sector.origin.y - origin.y
-        println("offset: $x, $y")
+        println("Terrain offset: $x, $y")
         return TerrainView(sector, Vector2(x, y), 1f / sector.pixelSize)
-    }
-
-    fun TerrainView.getHeight(x: Float, y: Float): Float {
-        val relativeX = (offset.x + x) * scale
-        val relativeY = (offset.y + y) * scale
-
-        if (relativeX < 0 || relativeY < 0) return -100f
-
-        val chunkPos = Vector2i(
-                (relativeX / sector.chunkSize).toInt(),
-                (relativeY / sector.chunkSize).toInt()
-        )
-
-        val chunk = sector.chunkMap[chunkPos] ?: return 0f
-
-        val chunkRelX = relativeX - chunkPos.x * sector.chunkSize
-        val chunkRelY = relativeY - chunkPos.y * sector.chunkSize
-
-        return chunk.heights.interpolatedHeight(chunkRelX, chunkRelY)
-    }
-
-    private fun HeightMap.uninterpolateHeight(x: Float, y: Float): Float {
-        return this[x.toInt(), y.toInt()]
     }
 
     private fun HeightMap.interpolatedHeight(x: Float, y: Float): Float {
@@ -142,25 +117,6 @@ object TerrainLoader {
         )
     }
 
-    fun relativize(coords: List<Double>): List<Float> {
-        val result = mutableListOf<Float>()
-
-        repeat(coords.size / 3) {
-            val x = coords[it * 3].toFloat()
-            val z = coords[it * 3 + 1].toFloat()
-            val y = coords[it * 3 + 2].toFloat()
-
-            result += x - ORIGIN.x
-            result += y //+ getHeight(x, y)
-            result += z - ORIGIN.z
-        }
-        return result
-    }
-
-    fun getHeight(x: Float, y: Float): Float {
-        return tmpTerrainView.getHeight(x, y)
-    }
-
     private fun interpolate(a: Float, b: Float, c: Float): Float {
         // linear interpolation
         return a * (1 - c) + b * c
@@ -170,16 +126,43 @@ object TerrainLoader {
 //        return (a * (1f - mu2)) + (b * mu2)
     }
 
-    fun loadHeightMaps(): Boolean {
-        var error = false
-        try {
-            val terrain = loadTerrain("../data/GaliciaDTM25m.tif")
-            val sector = readSector(terrain, 8..11, 14..17, 256)
-            tmpTerrainView = createView(sector, Vector2(ORIGIN.x, ORIGIN.z))
-        } catch (e: Exception) {
-            info("Error loading terrain: $e")
-            error = true
-        }
-        return error
+    fun load(scene: DScene): TerrainView {
+
+        val terrain = TerrainLoader.loadTerrain(scene.ground.file)
+
+        val area = scene.ground.area
+        val chunkSize = 256
+        val cellSize = terrain.pixelSize * chunkSize
+
+        val startX = floor((area.pos.x - terrain.origin.x) / cellSize).toInt() - 1
+        val startY = floor((terrain.origin.y - area.pos.y) / cellSize).toInt() - 1
+
+        val sizeX = ceil(area.size.x / cellSize).toInt()+2
+        val sizeY = ceil(area.size.y / cellSize).toInt()+2
+
+        println("Loading terrain in x range $startX..${startX + sizeX} with chunksize of $chunkSize")
+        println("Loading terrain in y range $startY..${startY + sizeY} with chunksize of $chunkSize")
+
+        val sector = TerrainLoader.readSector(terrain, startX..(startX + sizeX), startY..(startY + sizeY), chunkSize)
+        return createView(sector, scene.origin)
+    }
+
+    fun getHeight(view: TerrainLoader.TerrainView, x: Float, y: Float): Float = view.run {
+        val relativeX = (offset.x + x) * scale
+        val relativeY = (offset.y + y) * scale
+
+        if (relativeX < 0 || relativeY < 0) return -100f
+
+        val chunkPos = Vector2i(
+                (relativeX / sector.chunkSize).toInt(),
+                (relativeY / sector.chunkSize).toInt()
+        )
+
+        val chunk = sector.chunkMap[chunkPos] ?: return 0f
+
+        val chunkRelX = relativeX - chunkPos.x * sector.chunkSize
+        val chunkRelY = relativeY - chunkPos.y * sector.chunkSize
+
+        return chunk.heights.interpolatedHeight(chunkRelX, chunkRelY)
     }
 }

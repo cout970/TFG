@@ -273,7 +273,7 @@ enum class DCameraType { PERSPECTIVE, ORTHOGRAPHIC }
 
 data class DViewPoint(
         val location: Vector3,
-        val orientation: DRotation,
+        val orientation: Vector3,
         val camera: DCameraType
 )
 

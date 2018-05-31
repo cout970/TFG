@@ -5,7 +5,6 @@ import ch.qos.logback.classic.Logger
 import com.cout970.server.ddbb.DDBBManager
 import com.cout970.server.rest.Rest.httpServer
 import com.cout970.server.scene.bakeScene
-import com.cout970.server.terrain.TerrainLoader
 import com.cout970.server.util.FontExtrude
 import com.cout970.server.util.info
 import org.slf4j.LoggerFactory
@@ -40,18 +39,6 @@ fun main(args: Array<String>) {
     FontExtrude.init()
     info("Done: THREE")
 
-    info("Loading height maps")
-    var error = false
-    var time: Long
-
-    time = measureTimeMillis {
-        error = TerrainLoader.loadHeightMaps()
-    }
-    when (error) {
-        true -> info("Exception in Map loading ($time ms)")
-        else -> info("Done: Map loading ($time ms)")
-    }
-
     System.gc()
 
     // clear old scenes
@@ -60,7 +47,7 @@ fun main(args: Array<String>) {
     }
 
     info("Baking scene")
-    time = measureTimeMillis {
+    val time = measureTimeMillis {
         bakeScene()
     }
     info("Scene baked ($time ms)")

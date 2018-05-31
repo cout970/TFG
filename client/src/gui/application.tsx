@@ -21,7 +21,7 @@ export default class Application extends React.Component<{}, ApplicationState> {
     constructor(props) {
         super(props)
 
-        this.state = {scene: Environment.externalScene, hidden: false}
+        this.state = {scene: Environment.externalScene, hidden: true}
         Environment.guiCallback = () => {
             this.setState(i => ({...i, scene: Environment.externalScene}))
         }

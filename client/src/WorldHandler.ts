@@ -44,8 +44,24 @@ export class WorldHandler {
     }
 
     private static processScene(scene: Scene) {
-        scene.children.forEach(layer => {
 
+        let views = scene.userData.view_points
+        let mainView = views[0]
+
+        let pos = mainView.location
+        pos = new Vector3(pos[0], pos[1], pos[2])
+
+        let rot = mainView.orientation
+        let dir = new Vector3(rot[0], rot[1], rot[2])
+
+        Environment.camera.position.set(pos.x, pos.y, pos.z)
+        Environment.controls.target.set(pos.x + dir.x, pos.y + dir.y, pos.z + dir.z)
+        Environment.controls.update()
+
+        console.log(Environment.camera.position)
+        console.log(Environment.controls.target)
+
+        scene.children.forEach(layer => {
             layer.children.forEach(rule => {
 
                 let props: any[] = rule.userData.properties

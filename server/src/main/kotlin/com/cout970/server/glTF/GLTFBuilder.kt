@@ -242,7 +242,8 @@ class GLTFBuilder {
 
     data class Scene(
             val nodes: MutableList<Node> = mutableListOf(),
-            var name: String? = null
+            var name: String? = null,
+            var extras: Any? = null
     )
 
     fun scene(func: Scene.() -> Unit) {
@@ -262,7 +263,8 @@ class GLTFBuilder {
 
         return GltfScene(
                 nodes = indices,
-                name = name
+                name = name,
+                extras = extras
         )
     }
 

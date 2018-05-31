@@ -23,8 +23,17 @@ object SceneBaker {
     fun bake(scene: DScene, buffer: String) = gltfModel {
         bufferName = buffer
 
+        info("Loading terrain files")
+        val view = TerrainLoader.load(scene)
+        info("terrain loaded")
+
         scene {
             name = scene.title
+
+            extras = mapOf(
+                    "view_points" to scene.viewPoints,
+                    "description" to scene.abstract
+            )
 
             node {
                 name = "terrain"
@@ -36,7 +45,7 @@ object SceneBaker {
                 mesh {
 
                     val geom = generateTerrainMesh(scene.origin, scene.ground.area, scene.ground.gridSize)
-                            .project(SnapProjection(0f))
+                            .project(SnapProjection(0f), view)
 
                     setGeometry(this, geom, scene.ground.material)
                 }
@@ -58,13 +67,13 @@ object SceneBaker {
                             extras = mapOf(
                                     "properties" to serializeProperties(rule.properties)
                             )
-                            val needPosition = rule.properties.any { it is DPropertyFollowCamera }
+                            val needPosition = rule.properties.any { it === DPropertyFollowCamera }
 
                             if (needPosition) {
                                 val models = rule.shapes.parallelStream()
                                         .flatMap { getShapes(it).stream() }
                                         .toList()
-                                        .map { bakeShape(it) }
+                                        .map { bakeShape(it, view) }
 
                                 models.forEachIndexed { index, model ->
 
@@ -83,7 +92,7 @@ object SceneBaker {
                             } else {
                                 val models = rule.shapes.parallelStream()
                                         .flatMap { getShapes(it).stream() }
-                                        .map { bakeShape(it) }
+                                        .map { bakeShape(it, view) }
                                         .toList()
                                         .simplify()
 
@@ -265,14 +274,14 @@ object SceneBaker {
 
     // shape baking
 
-    fun bakeShape(shape: DShape): Model {
+    fun bakeShape(shape: DShape, view: TerrainLoader.TerrainView): Model {
         try {
             return when (shape) {
-                is ShapeAtPoint -> bakeShapeAtPoint(shape)
-                is ShapeAtLine -> bakeShapeAtLine(shape)
-                is ShapeAtSurface -> bakeShapeAtSurface(shape)
-                is ShapeExtrudeSurface -> bakeExtrudeShape(shape)
-                is ShapeLabel -> bakeLabel(shape)
+                is ShapeAtPoint -> bakeShapeAtPoint(shape, view)
+                is ShapeAtLine -> bakeShapeAtLine(shape, view)
+                is ShapeAtSurface -> bakeShapeAtSurface(shape, view)
+                is ShapeExtrudeSurface -> bakeExtrudeShape(shape, view)
+                is ShapeLabel -> bakeLabel(shape, view)
             }
         } catch (e: Exception) {
 
@@ -289,17 +298,17 @@ object SceneBaker {
         }
     }
 
-    private fun bakeShapeAtPoint(shape: ShapeAtPoint): Model {
+    private fun bakeShapeAtPoint(shape: ShapeAtPoint, view: TerrainLoader.TerrainView): Model {
         val translation = DTransformGeometry(
                 translation = Vector3(shape.point.x, 0f, shape.point.y),
                 source = shape.geometry
         )
-        val newGeometry = translation.bake().project(shape.projection)
+        val newGeometry = translation.bake().project(shape.projection, view)
 
         return Model(newGeometry, shape.material)
     }
 
-    private fun bakeShapeAtLine(shape: ShapeAtLine): Model {
+    private fun bakeShapeAtLine(shape: ShapeAtLine, view: TerrainLoader.TerrainView): Model {
         val geometry = shape.geometry.bake()
 
         val direction = (shape.lineEnd - shape.lineStart).normalize()
@@ -317,14 +326,14 @@ object SceneBaker {
                     translation = point2d,
                     source = geometry
             )
-            geometries += translation.bake().project(shape.projection)
+            geometries += translation.bake().project(shape.projection, view)
         }
 
         val newGeometry = geometries.reduce { acc, geom -> acc.merge(geom) }
         return Model(newGeometry, shape.material)
     }
 
-    private fun bakeShapeAtSurface(shape: ShapeAtSurface): Model {
+    private fun bakeShapeAtSurface(shape: ShapeAtSurface, view: TerrainLoader.TerrainView): Model {
         val geometry = shape.geometry.bake()
 
         val locations = mutableListOf<Vector2>()
@@ -358,25 +367,25 @@ object SceneBaker {
                     translation = Vector3(point2d.x, 0f, point2d.y),
                     source = geometry
             )
-            geometries += translation.bake().project(shape.projection)
+            geometries += translation.bake().project(shape.projection, view)
         }
 
         val newGeometry = geometries.reduce { acc, geom -> acc.merge(geom) }
         return Model(newGeometry, shape.material)
     }
 
-    private fun bakeExtrudeShape(shape: ShapeExtrudeSurface): Model {
+    private fun bakeExtrudeShape(shape: ShapeExtrudeSurface, view: TerrainLoader.TerrainView): Model {
         val surface = shape.surface
         require(surface.points.size >= 3) {
             "Polygon must have at least 3 points, it had ${surface.points.size} instead"
         }
 
-        val newGeometry = extrude(surface, shape.height).bake().project(projection = shape.projection)
+        val newGeometry = extrude(surface, shape.height).bake().project(shape.projection, view)
 
         return Model(newGeometry, shape.material)
     }
 
-    private fun bakeLabel(label: ShapeLabel): Model {
+    private fun bakeLabel(label: ShapeLabel, view: TerrainLoader.TerrainView): Model {
 
         val geom = FontExtrude.extrudeLabel(label.txt, label.scale.toDouble())
         val center = geom.center()
@@ -388,7 +397,7 @@ object SceneBaker {
 
         val newGeometry = DTransformGeometry(
                 translation = Vector3(-label.position.x, 0f, -label.position.y),
-                source = moved.bake().project(label.projection)
+                source = moved.bake().project(label.projection, view)
         ).bake()
 
         val finalGeom = DTransformGeometry(
@@ -461,11 +470,11 @@ object SceneBaker {
         return copy(attributes = newAttributes)
     }
 
-    private fun DBufferGeometry.project(projection: DGroundProjection): DBufferGeometry {
+    private fun DBufferGeometry.project(projection: DGroundProjection, view: TerrainLoader.TerrainView): DBufferGeometry {
         val newAttributes = attributes.map { attr ->
             if (attr.attributeName != "position") return@map attr
 
-            attr.copy(data = project(projection, attr.data))
+            attr.copy(data = project(projection, attr.data, view))
         }
 
         return copy(attributes = newAttributes)
@@ -492,7 +501,7 @@ object SceneBaker {
         return triangles.toGeometry()
     }
 
-    private fun project(projection: DGroundProjection, points: FloatArray): FloatArray {
+    private fun project(projection: DGroundProjection, points: FloatArray, view: TerrainLoader.TerrainView): FloatArray {
 
         when (projection) {
             is DefaultGroundProjection -> {
@@ -503,7 +512,7 @@ object SceneBaker {
                     val xPos = points[i[0]]
                     val zPos = points[i[2]]
 
-                    val h = TerrainLoader.getHeight(xPos, zPos)
+                    val h = TerrainLoader.getHeight(view, xPos, zPos)
                     min = Math.min(min, h)
                     max = Math.max(max, h)
                 }
@@ -524,7 +533,7 @@ object SceneBaker {
                     val xPos = points[i[0]]
                     val zPos = points[i[2]]
 
-                    points[i[1]] += TerrainLoader.getHeight(xPos, zPos) + projection.elevation
+                    points[i[1]] += TerrainLoader.getHeight(view, xPos, zPos) + projection.elevation
                 }
             }
             is BridgeGroundProjection -> TODO("")
