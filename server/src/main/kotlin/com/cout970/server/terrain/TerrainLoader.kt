@@ -12,6 +12,8 @@ import java.awt.Point
 import java.awt.image.Raster
 import java.awt.image.RenderedImage
 import java.io.File
+import kotlin.math.ceil
+import kotlin.math.floor
 import kotlin.streams.toList
 
 object TerrainLoader {
@@ -84,11 +86,11 @@ object TerrainLoader {
             val scale: Float
     )
 
-    fun createView(sector: TerrainSector, origin: Vector2, unitSize: Float): TerrainView {
+    fun createView(sector: TerrainSector, origin: Vector2): TerrainView {
         val x = origin.x - sector.origin.x
         val y = sector.origin.y - origin.y
         println("offset: $x, $y")
-        return TerrainView(sector, Vector2(x, y), 1f / unitSize)
+        return TerrainView(sector, Vector2(x, y), 1f / sector.pixelSize)
     }
 
     fun TerrainView.getHeight(x: Float, y: Float): Float {
@@ -110,11 +112,34 @@ object TerrainLoader {
         return chunk.heights.interpolatedHeight(chunkRelX, chunkRelY)
     }
 
-    private fun HeightMap.interpolatedHeight(x: Float, y: Float): Float {
-        val gridX = x.toInt()
-        val gridY = y.toInt()
+    private fun HeightMap.uninterpolateHeight(x: Float, y: Float): Float {
+        return this[x.toInt(), y.toInt()]
+    }
 
-        return this[gridX, gridY]
+    private fun HeightMap.interpolatedHeight(x: Float, y: Float): Float {
+        val gridX = floor(x)
+        val gridY = floor(y)
+
+        val gridX1 = ceil(x)
+        val gridY1 = ceil(y)
+
+        val base = this[x.toInt(), y.toInt()]
+
+        val minXminY = this.getOrNull(gridX.toInt(), gridY.toInt()) ?: base
+        val maxXminY = this.getOrNull(gridX1.toInt(), gridY.toInt()) ?: base
+
+        val minXmaxY = this.getOrNull(gridX.toInt(), gridY1.toInt()) ?: base
+        val maxXmaxY = this.getOrNull(gridX1.toInt(), gridY1.toInt()) ?: base
+
+        val deltaX = (x - gridX).coerceIn(0.0f, 1.0f)
+        val deltaY = (y - gridY).coerceIn(0.0f, 1.0f)
+
+        // Bilinear interpolation
+        return interpolate(
+                interpolate(minXminY, maxXminY, deltaX),
+                interpolate(minXmaxY, maxXmaxY, deltaX),
+                deltaY
+        )
     }
 
     fun relativize(coords: List<Double>): List<Float> {
@@ -133,14 +158,14 @@ object TerrainLoader {
     }
 
     fun getHeight(x: Float, y: Float): Float {
-        val absX = x // - tmpTerrainView.relativeOrigin.x
-        val absY = y // - tmpTerrainView.relativeOrigin.y
-
-        return tmpTerrainView.getHeight(absX, absY)
+        return tmpTerrainView.getHeight(x, y)
     }
 
     private fun interpolate(a: Float, b: Float, c: Float): Float {
-        return a * c + b * (1 - c)
+        // linear interpolation
+        return a * (1 - c) + b * c
+
+        // cosine interpolation
 //        val mu2 = (1f - Math.cos(c * Math.PI).toFloat()) / 2f
 //        return (a * (1f - mu2)) + (b * mu2)
     }
@@ -149,8 +174,8 @@ object TerrainLoader {
         var error = false
         try {
             val terrain = loadTerrain("../data/GaliciaDTM25m.tif")
-            val sector = readSector(terrain, 0..31, 0..31, 256)
-            tmpTerrainView = createView(sector, Vector2(ORIGIN.x, ORIGIN.z), 25f)
+            val sector = readSector(terrain, 8..11, 14..17, 256)
+            tmpTerrainView = createView(sector, Vector2(ORIGIN.x, ORIGIN.z))
         } catch (e: Exception) {
             info("Error loading terrain: $e")
             error = true

@@ -26,8 +26,8 @@ fun createDemoScene(): DScene {
     val origin = Vector2(535909f, 4746842f)
 
     val area = DArea(
-            Vector2f(origin.x - 500, origin.y - 500),
-            Vector2f(1000f)
+            Vector2f(origin.x - 1000, origin.y - 1000),
+            Vector2f(2000f)
     )
 
     val lightModel = Cube.fromCoordinates(
