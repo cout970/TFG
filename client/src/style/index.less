@@ -10,15 +10,43 @@
   padding: 0;
   width: 100vw;
   height: 100vh;
-  float: left;
 }
 
 #root {
-  width: 20vw;
+  position: absolute;
+  top: 0;
+
+  background: rgba(255, 255, 255, 0.65);
+  background-blend-mode: hue;
+
+  border-right: solid #FFFFFF 2px;
+
+  text-align: center;
+  z-index: 100;
+  display: block;
+}
+
+#panel-enable{
+  width: 300px;
   height: 100vh;
-  float: right;
-  margin: 0;
-  padding: 0;
+}
+
+#panel-disable{
+  width: 0;
+  height: 100vh;
+}
+
+#hidePanel {
+  position: absolute;
+  top: 5px;
+
+  width: 32px;
+  height: 32px;
+
+  background: rgba(255, 255, 255, 0.65);
+  border-right: solid #FFFFFF 2px;
+  border-top: solid #FFFFFF 2px;
+  border-bottom: solid #FFFFFF 2px;
 }
 
 .right-panel {

@@ -50,15 +50,15 @@ export default class Layer extends React.Component<LayerProps, LayerState> {
             <tr>
                 <td>
                     <input type="checkbox" id={Layer.fixName(name)} name="checkbox"
-                           checked={this.state.show} onChange={this.toggleShow}/>
-                    <label htmlFor={Layer.fixName(name)}>{name}</label>
+                           style={{float: "left"}} checked={this.state.show} onChange={this.toggleShow}/>
+
+                    <label style={{float: "left"}}  htmlFor={Layer.fixName(name)}>{name}</label>
 
                     <input type="checkbox" id={Layer.fixName(name) + "_wire"} name="checkbox2"
-                           checked={this.state.wireframe} onChange={this.toggleWireframe}/>
-                    <label htmlFor={Layer.fixName(name) + "_wire"}>Wireframe</label>
+                           style={{float: "left"}}  checked={this.state.wireframe} onChange={this.toggleWireframe}/>
 
+                    <label style={{float: "left"}}  htmlFor={Layer.fixName(name) + "_wire"}>Wire</label>
                 </td>
-                <td>{description}</td>
             </tr>
         )
     }

@@ -36,7 +36,7 @@ export default class Environment {
         const canvas: HTMLCanvasElement = document.getElementById("webGL") as HTMLCanvasElement
 
         canvas.height = window.innerHeight
-        canvas.width = Math.floor(window.innerWidth * 0.8)
+        canvas.width = window.innerWidth
 
         this.scene = new Scene()
         this.externalScene = new Scene()
@@ -68,7 +68,14 @@ export default class Environment {
 
         // FPS counter
         this.stats = new StatsCtr()
-        body.appendChild(this.stats.dom)
+        let dom = this.stats.dom
+        dom.style.position = 'absolute';
+        dom.style.top = '';
+        dom.style.left = '';
+        dom.style.bottom = '0px';
+        dom.style.right = '0px';
+        dom.style.zIndex = '100';
+        body.appendChild(dom)
 
         // Camera controls
         this.controls = new OrbitControlsCtr(this.camera, this.renderer.domElement)
@@ -84,7 +91,7 @@ export default class Environment {
         // On window change size
         window.addEventListener("resize", () => {
             canvas.height = window.innerHeight
-            canvas.width = Math.floor(window.innerWidth * 0.8)
+            canvas.width = window.innerWidth
             this.camera.aspect = canvas.width / canvas.height
             this.camera.updateProjectionMatrix()
             this.renderer.setSize(canvas.width, canvas.height)
