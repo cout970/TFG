@@ -27,24 +27,26 @@ fun IModel.toGeometry(): DBufferGeometry {
 }
 
 fun Polygon2D.triangles(): List<Vector2> {
-    val data = DoubleArray(points.size * 2)
-
-    points.forEachIndexed { index, point ->
-        data[index * 2] = point.x.toDouble()
-        data[index * 2 + 1] = point.y.toDouble()
-    }
-
-    val indices = Earcut.earcut(data)
-
-    val list = mutableListOf<Vector2>()
-
-    indices.windowed(3, 3).forEach {
-        list += points[it[2]]
-        list += points[it[1]]
-        list += points[it[0]]
-    }
-
-    return list
+    val triangles = Triangulator.triangulate(this)
+    return triangles.flatMap { listOf(it.a, it.b, it.c) }
+//    val data = DoubleArray(points.size * 2)
+//
+//    points.forEachIndexed { index, point ->
+//        data[index * 2] = point.x.toDouble()
+//        data[index * 2 + 1] = point.y.toDouble()
+//    }
+//
+//    val indices = Earcut.earcut(data)
+//
+//    val list = mutableListOf<Vector2>()
+//
+//    indices.windowed(3, 3).forEach {
+//        list += points[it[2]]
+//        list += points[it[1]]
+//        list += points[it[0]]
+//    }
+//
+//    return list
 }
 
 fun DBufferGeometry.max(): Vector3 {

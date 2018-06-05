@@ -69,7 +69,12 @@ object TerrainLoader {
 
                 val xPixelPos = x + xStart
                 val yPixelPos = y + yStart
-                val height = raster.getSample(xPixelPos, yPixelPos, 0)
+
+
+                val height = when (xPixelPos in 0 until raster.width && yPixelPos in 0 until raster.height) {
+                    true -> raster.getSample(xPixelPos, yPixelPos, 0)
+                    else -> 0
+                }
 
                 map[x, y] = height.toFloat()
             }
@@ -137,8 +142,8 @@ object TerrainLoader {
         val startX = floor((area.pos.x - terrain.origin.x) / cellSize).toInt() - 1
         val startY = floor((terrain.origin.y - area.pos.y) / cellSize).toInt() - 1
 
-        val sizeX = ceil(area.size.x / cellSize).toInt()+2
-        val sizeY = ceil(area.size.y / cellSize).toInt()+2
+        val sizeX = ceil(area.size.x / cellSize).toInt() + 2
+        val sizeY = ceil(area.size.y / cellSize).toInt() + 2
 
         println("Loading terrain in x range $startX..${startX + sizeX} with chunksize of $chunkSize")
         println("Loading terrain in y range $startY..${startY + sizeY} with chunksize of $chunkSize")

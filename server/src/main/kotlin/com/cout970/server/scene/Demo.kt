@@ -7,9 +7,13 @@ import com.cout970.server.rest.Rest
 import com.cout970.server.util.colorFromHue
 import com.cout970.server.util.debug
 import com.cout970.server.util.toGeometry
+import eu.printingin3d.javascad.basic.Angle
 import eu.printingin3d.javascad.coords.Coords3d
 import eu.printingin3d.javascad.coords.Dims3d
+import eu.printingin3d.javascad.coords2d.Coords2d
 import eu.printingin3d.javascad.models.Cube
+import eu.printingin3d.javascad.models.LinearExtrude
+import eu.printingin3d.javascad.models2d.Polygon
 import org.joml.Vector2f
 import java.io.File
 
@@ -202,7 +206,7 @@ fun createDemoScene(): DScene {
     )
 
     val ground = DGround(
-            file = "../data/GaliciaDTM25m.tif",
+            file = "../data/height/PNOA_MDT05_ETRS89_HU29_0094_LID.tif",
             material = DMaterial(
                     metallic = 0.0f,
                     roughness = 0.5f,
@@ -218,11 +222,145 @@ fun createDemoScene(): DScene {
             title = "Demo scene",
             abstract = "A demo scene showing the base components of a scene",
             viewPoints = listOf(mainViewPoint),
-            layers = listOf(buildingLayer, streetLayer, lightsLayer, parksLayer, schoolsLayer, schoolsLabelsLayer),
+            layers = listOf(buildingLayer, streetLayer, lightsLayer, parksLayer, schoolsLayer, schoolsLabelsLayer, debugLayer()),
             ground = ground,
             origin = origin
     )
 
     File("test.json").writeText(GLTF_GSON.toJson(scene))
     return scene
+}
+
+fun debugLayer(): DLayer {
+
+    val cubeA = LinearExtrude(Polygon(listOf(
+            Coords2d(0.0, 0.0), Coords2d(10.0, 0.0),
+            Coords2d(10.0, 10.0), Coords2d(0.0, 10.0)
+    )), 1.0, Angle.ZERO, 1.0)
+
+    val cubeB = LinearExtrude(Polygon(listOf(
+            Coords2d(1.0, 1.0), Coords2d(9.0, 1.0),
+            Coords2d(9.0, 9.0), Coords2d(1.0, 9.0)
+    )), 2.0, Angle.ZERO, 1.0)
+
+    return DLayer(
+            name = "School names",
+            description = "Description",
+            rules = listOf(DRule(
+                    properties = listOf(DPropertyFollowCamera),
+                    shapes = listOf(
+                            DInlineShapeSource(ShapeLabel(
+                                    txt = "Cube",
+                                    scale = 4f,
+                                    material = DMaterial(
+                                            metallic = 0.5f,
+                                            roughness = 0.5f,
+                                            diffuseColor = DColor(1f, 1f, 1f),
+                                            emissiveColor = DColor(1f, 1f, 1f),
+                                            opacity = 1f
+                                    ),
+                                    projection = DefaultGroundProjection(100f, true),
+                                    position = Vector2(0f, 0f)
+                            )),
+                            DInlineShapeSource(ShapeLabel(
+                                    txt = "Union",
+                                    scale = 4f,
+                                    material = DMaterial(
+                                            metallic = 0.5f,
+                                            roughness = 0.5f,
+                                            diffuseColor = DColor(1f, 1f, 1f),
+                                            emissiveColor = DColor(1f, 1f, 1f),
+                                            opacity = 1f
+                                    ),
+                                    projection = DefaultGroundProjection(100f, true),
+                                    position = Vector2(0f, 50f)
+                            )),
+                            DInlineShapeSource(ShapeLabel(
+                                    txt = "Difference",
+                                    scale = 4f,
+                                    material = DMaterial(
+                                            metallic = 0.5f,
+                                            roughness = 0.5f,
+                                            diffuseColor = DColor(1f, 1f, 1f),
+                                            emissiveColor = DColor(1f, 1f, 1f),
+                                            opacity = 1f
+                                    ),
+                                    projection = DefaultGroundProjection(100f, true),
+                                    position = Vector2(0f, 100f)
+                            )),
+                            DInlineShapeSource(ShapeLabel(
+                                    txt = "Intersection",
+                                    scale = 4f,
+                                    material = DMaterial(
+                                            metallic = 0.5f,
+                                            roughness = 0.5f,
+                                            diffuseColor = DColor(1f, 1f, 1f),
+                                            emissiveColor = DColor(1f, 1f, 1f),
+                                            opacity = 1f
+                                    ),
+                                    projection = DefaultGroundProjection(100f, true),
+                                    position = Vector2(0f, 150f)
+                            ))
+                    )
+            ), DRule(
+                    properties = emptyList(),
+                    shapes = listOf(
+                            DInlineShapeSource(
+                                    ShapeAtPoint(
+                                            point = Vector2(0f, 0f),
+                                            projection = DefaultGroundProjection(90f, true),
+                                            material = DMaterial(
+                                                    metallic = 0.5f,
+                                                    roughness = 0.5f,
+                                                    diffuseColor = DColor(1f, 0.5f, 0.5f),
+                                                    emissiveColor = DColor(0f, 0f, 0f),
+                                                    opacity = 1f
+                                            ),
+                                            geometry = cubeA.toGeometry()
+                                    )
+                            ),
+                            DInlineShapeSource(
+                                    ShapeAtPoint(
+                                            point = Vector2(0f, 50f),
+                                            projection = DefaultGroundProjection(90f, true),
+                                            material = DMaterial(
+                                                    metallic = 0.5f,
+                                                    roughness = 0.5f,
+                                                    diffuseColor = DColor(1f, 0f, 0f),
+                                                    emissiveColor = DColor(0f, 0f, 0f),
+                                                    opacity = 1f
+                                            ),
+                                            geometry = cubeA.toCSG().union(cubeB.toCSG()).polygons.toGeometry()
+                                    )
+                            ),
+                            DInlineShapeSource(
+                                    ShapeAtPoint(
+                                            point = Vector2(0f, 100f),
+                                            projection = DefaultGroundProjection(90f, true),
+                                            material = DMaterial(
+                                                    metallic = 0.5f,
+                                                    roughness = 0.5f,
+                                                    diffuseColor = DColor(0f, 1f, 0f),
+                                                    emissiveColor = DColor(0f, 0f, 0f),
+                                                    opacity = 1f
+                                            ),
+                                            geometry = cubeA.toCSG().difference(cubeB.toCSG()).polygons.toGeometry()
+                                    )
+                            ),
+                            DInlineShapeSource(
+                                    ShapeAtPoint(
+                                            point = Vector2(0f, 150f),
+                                            projection = DefaultGroundProjection(90f, true),
+                                            material = DMaterial(
+                                                    metallic = 0.5f,
+                                                    roughness = 0.5f,
+                                                    diffuseColor = DColor(1f, 0f, 0f),
+                                                    emissiveColor = DColor(0f, 0f, 0f),
+                                                    opacity = 1f
+                                            ),
+                                            geometry = cubeA.toCSG().intersect(cubeB.toCSG()).polygons.toGeometry()
+                                    )
+                            ))
+            ))
+    )
 }

@@ -2,15 +2,14 @@ package com.cout970.server.ddbb
 
 import com.cout970.server.Config
 import com.cout970.server.glTF.Vector2
+import com.cout970.server.scene.DArea
 import com.cout970.server.scene.DPolygon
 import com.cout970.server.terrain.TerrainLoader
 import com.cout970.server.util.info
 import com.cout970.server.util.relativize
 import com.cout970.server.util.toPolygon
-import org.postgis.DriverWrapper
-import org.postgis.MultiPolygon
-import org.postgis.PGgeometry
-import org.postgis.Point
+import com.cout970.server.util.toSQL
+import org.postgis.*
 import org.postgresql.Driver
 import org.postgresql.PGConnection
 import java.sql.Connection
@@ -58,27 +57,32 @@ object DDBBManager {
         info("Query finished in (${System.currentTimeMillis() - start}ms)")
     }
 
-    fun loadPolygons(geomField: String, tableName: String, area: String): List<PolygonGroup> {
+    fun loadPolygons(geomField: String, tableName: String, area: DArea): List<PolygonGroup> {
         val sql = """
-                SELECT $geomField
-                FROM "$tableName", $area AS area
-                WHERE ST_Within($geomField, area);
-                      """
+                SELECT ST_Segmentize(inter, 5)
+                FROM "$tableName", ${area.toSQL()} AS area, ST_Intersection($geomField, area) AS inter
+                WHERE ST_Isvalid($geomField) AND ST_Intersects($geomField, area);
+                """
 
         return DDBBManager.load(sql) {
 
-            val geom = it.getObject(geomField) as PGgeometry
-            val multiPolygon = geom.geometry as MultiPolygon
+            val geom = it.getObject(1) as PGgeometry
 
-            PolygonGroup(multiPolygon.polygons.map { poly -> poly.toPolygon().relativize() })
+            val geometry = geom.geometry
+
+            when (geometry) {
+                is MultiPolygon -> PolygonGroup(geometry.polygons.map { poly -> poly.toPolygon().relativize() })
+                is Polygon -> PolygonGroup(listOf(geometry.toPolygon().relativize()))
+                else -> error("Unknown Geometry type: ${geometry::class.java}, $geometry")
+            }
         }
     }
 
-    fun loadExtrudedPolygons(geomField: String, heightField: String, tableName: String, heightScale: Float, area: String): List<ExtrudePolygonGroup> {
+    fun loadExtrudedPolygons(geomField: String, heightField: String, tableName: String, heightScale: Float, area: DArea): List<ExtrudePolygonGroup> {
         val sql = """
                 SELECT $geomField, $heightField
-                FROM "$tableName", $area AS area
-                WHERE ST_Within($geomField, area);
+                FROM "$tableName", ${area.toSQL()} AS area
+                WHERE ST_Intersects($geomField, area);
                       """
 
         return DDBBManager.load(sql) {
@@ -94,11 +98,11 @@ object DDBBManager {
         }
     }
 
-    fun loadLabels(geomField: String, nameField: String, tableName: String, area: String): List<Label> {
+    fun loadLabels(geomField: String, nameField: String, tableName: String, area: DArea): List<Label> {
         val sql = """
                 SELECT $nameField, center
-                FROM "$tableName", $area AS area, ST_Centroid($geomField) as center
-                WHERE ST_Within($geomField, area);
+                FROM "$tableName", ${area.toSQL()} AS area, ST_Centroid($geomField) as center
+                WHERE ST_Intersects($geomField, area);
                       """
 
         return DDBBManager.load(sql) {
@@ -114,11 +118,11 @@ object DDBBManager {
         }
     }
 
-    fun loadPoints(geomField: String, tableName: String, area: String): List<Vector2> {
+    fun loadPoints(geomField: String, tableName: String, area: DArea): List<Vector2> {
         val sql = """
                 SELECT geom
-                FROM "$tableName", $area AS area
-                WHERE ST_Within($geomField, area);
+                FROM "$tableName", ${area.toSQL()} AS area
+                WHERE ST_Intersects($geomField, area);
                       """
 
         return DDBBManager.load(sql) {

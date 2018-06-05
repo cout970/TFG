@@ -180,7 +180,7 @@ object SceneBaker {
 
     fun getShapes(source: DExtrudedShapeSource): List<DShape> {
         val src = source.polygonsSource
-        val geoms = DDBBManager.loadExtrudedPolygons(src.geomField, src.heightField, src.tableName, src.heightScale, src.area.toSQL())
+        val geoms = DDBBManager.loadExtrudedPolygons(src.geomField, src.heightField, src.tableName, src.heightScale, src.area)
 
         return geoms.flatMap { epg ->
             epg.polygons.map { poly ->
@@ -197,7 +197,7 @@ object SceneBaker {
     fun getShapes(source: DShapeAtPointSource): List<DShape> {
         val geom = getGeometry(source.geometrySource)
         val src = source.points
-        val points = DDBBManager.loadPoints(src.geomField, src.tableName, src.area.toSQL())
+        val points = DDBBManager.loadPoints(src.geomField, src.tableName, src.area)
 
         return points.map {
             ShapeAtPoint(
@@ -211,7 +211,7 @@ object SceneBaker {
 
     fun getShapes(source: DPolygonsShapeSource): List<DShape> {
         val src = source.geometrySource
-        val polys = DDBBManager.loadPolygons(src.geomField, src.tableName, src.area.toSQL())
+        val polys = DDBBManager.loadPolygons(src.geomField, src.tableName, src.area)
 
         return polys.map {
             ShapeAtPoint(
@@ -226,7 +226,7 @@ object SceneBaker {
     fun getShapes(source: DShapeAtSurfaceSource): List<DShape> {
         val geom = getGeometry(source.geometrySource)
         val src = source.surfaceSource
-        val polys = DDBBManager.loadPolygons(src.geomField, src.tableName, src.area.toSQL())
+        val polys = DDBBManager.loadPolygons(src.geomField, src.tableName, src.area)
 
         return polys.flatMap { poly ->
             poly.polygons.map { surface ->
@@ -243,7 +243,7 @@ object SceneBaker {
 
     fun getShapes(source: DExtrudeShapeSource): List<DShape> {
         val src = source.polygonsSource
-        val geoms = DDBBManager.loadPolygons(src.geomField, src.tableName, src.area.toSQL())
+        val geoms = DDBBManager.loadPolygons(src.geomField, src.tableName, src.area)
 
         return geoms.flatMap { epg ->
             epg.polygons.map { poly ->
@@ -259,7 +259,7 @@ object SceneBaker {
 
     fun getShapes(source: DLabelShapeSource): List<DShape> {
         val src = source.labelSource
-        val labels = DDBBManager.loadLabels(src.geomField, src.textField, src.tableName, src.area.toSQL())
+        val labels = DDBBManager.loadLabels(src.geomField, src.textField, src.tableName, src.area)
 
         return labels.map { label ->
             ShapeLabel(
@@ -418,12 +418,12 @@ object SceneBaker {
     }
 
     private fun getGeometry(src: DPolygonsSource): DGeometry {
-        val polys = DDBBManager.loadPolygons(src.geomField, src.tableName, src.area.toSQL())
+        val polys = DDBBManager.loadPolygons(src.geomField, src.tableName, src.area)
         return polys.flatMap { it.polygons }.toGeometry()
     }
 
     private fun getGeometry(src: DExtrudedPolygonsSource): DGeometry {
-        val geoms = DDBBManager.loadExtrudedPolygons(src.geomField, src.heightField, src.tableName, src.heightScale, src.area.toSQL())
+        val geoms = DDBBManager.loadExtrudedPolygons(src.geomField, src.heightField, src.tableName, src.heightScale, src.area)
         return geoms.flatMap { it.polygons }.toGeometry()
     }
 
@@ -484,12 +484,24 @@ object SceneBaker {
 
     private fun extrude(polygon: DPolygon, height: Float): DGeometry {
         val coords = polygon.points.map { Coords2d(it.x.toDouble(), it.y.toDouble()) }
-        val model = LinearExtrude(Polygon(coords), height.toDouble(), Angle.ZERO, 1.0)
+//        val holes = polygon.holes.map { it.map { Coords2d(it.x.toDouble(), it.y.toDouble()) } }
 
-        val polygons = model.toCSG(FacetGenerationContext.DEFAULT).polygons
+        val exterior = LinearExtrude(Polygon(coords), height.toDouble(), Angle.ZERO, 1.0)
+//        val interiors = holes.map { LinearExtrude(Polygon(it), height.toDouble(), Angle.ZERO, 1.0) }
 
+        val exteriorCsg = exterior.toCSG(FacetGenerationContext.DEFAULT)
+
+//        val finalCsg = interiors.fold(exteriorCsg) { acc, hole ->
+//            val toRemove = hole.toCSG(FacetGenerationContext.DEFAULT)
+//
+//            acc.difference(toRemove)
+//        }
+
+        val triangles3d = exteriorCsg.polygons.flatMap { Triangulator.triangulate(it) }
+
+        // Correction, change y -> z and move up yOffset
         val yOffset = height / 2
-        val triangles = polygons.flatMap { Triangulator.triangulate(it) }.map { tri ->
+        val triangles = triangles3d.map { tri ->
             val (a, b, c) = tri.points
             Triangle3d(
                     Coords3d(a.x, a.z + yOffset, a.y),

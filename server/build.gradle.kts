@@ -2,6 +2,7 @@ import org.jetbrains.kotlin.gradle.dsl.Coroutines
 import org.jetbrains.kotlin.gradle.dsl.KotlinProjectExtension
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.js.translate.context.Namer.kotlin
+import java.util.regex.Pattern.compile
 
 val kotlinVersion = "1.2.21"
 val kotlinCoroutinesVersion = "0.22.2"
@@ -14,9 +15,16 @@ val gsonVersion = "2.8.2"
 val geotoolsVersion = "20-SNAPSHOT"
 val jcsgVersion = "0.5.6"
 val gdalVersion = "1.11.2"
+val jaiVersion = "1.1.3"
+val javascadVersion = "0.9.0.12"
+val poly2triVersion = "0.1.2"
 
 plugins {
     kotlin("jvm")
+}
+
+repositories {
+    mavenCentral()
 }
 
 dependencies {
@@ -33,9 +41,11 @@ dependencies {
     compile("org.geotools:gt-geotiff:$geotoolsVersion")
     compile("org.geotools:gt-epsg-hsql:$geotoolsVersion")
 
-    compile("javax.media:jai-core:1.1.3")
     compile("org.gdal:gdal:$gdalVersion")
-    compile("eu.printingin3d.javascad:javascad:0.9.0.12")
+    compile("eu.printingin3d.javascad:javascad:$javascadVersion")
+    compile(files("../data/poly2tri-core-0.1.1-SNAPSHOT.jar"))
+    compile("javax.media:jai-core:$jaiVersion")
+
 
     testCompile("junit:junit:$junitVersion")
     testCompile("org.jetbrains.kotlin:kotlin-test-junit:$kotlinVersion")

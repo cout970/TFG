@@ -9,8 +9,11 @@ import com.cout970.server.util.Earcut.earcut
 import eu.printingin3d.javascad.coords.Coords3d
 import eu.printingin3d.javascad.coords.Triangle3d
 import eu.printingin3d.javascad.coords2d.Coords2d
+import org.joml.Quaternionf
+import org.poly2tri.Poly2Tri
+import org.poly2tri.geometry.polygon.PolygonPoint
 import eu.printingin3d.javascad.models2d.Polygon as Polygon2d
-
+import org.poly2tri.geometry.polygon.Polygon as PPolygon
 
 object Triangulator {
 
@@ -20,21 +23,43 @@ object Triangulator {
     }
 
     fun triangulate(polygon: DPolygon): List<Triangle2d> {
-        val points = polygon.points
-        val data = points.flatMap { listOf(it.x, it.y) }.map { it.toDouble() }.toDoubleArray()
 
-        val indices = earcut(data)
-        val triangles = mutableListOf<Triangle2d>()
+        try {
+            val points = polygon.points.map { PolygonPoint(it.x.toDouble(), it.y.toDouble()) }
+            val poly = PPolygon(points)
 
-        repeat(indices.size / 3) { i ->
-            val a = points[indices[i * 3]]
-            val b = points[indices[i * 3 + 1]]
-            val c = points[indices[i * 3 + 2]]
+            polygon.holes.forEach {
+                poly.addHole(PPolygon(it.map { PolygonPoint(it.x.toDouble(), it.y.toDouble()) }))
+            }
 
-            triangles += Triangle2d(Vector2(a), Vector2(b), Vector2(c))
+            Poly2Tri.triangulate(poly)
+
+            return poly.triangles.map {
+                val p = it.points
+                Triangle2d(
+                        Vector2(p[0].xf, p[0].yf),
+                        Vector2(p[1].xf, p[1].yf),
+                        Vector2(p[2].xf, p[2].yf)
+                )
+            }
+
+        } catch (e: Throwable) {
+            val points = polygon.points
+            val data = points.flatMap { listOf(it.x, it.y) }.map { it.toDouble() }.toDoubleArray()
+
+            val indices = earcut(data)
+            val triangles = mutableListOf<Triangle2d>()
+
+            repeat(indices.size / 3) { i ->
+                val a = points[indices[i * 3]]
+                val b = points[indices[i * 3 + 1]]
+                val c = points[indices[i * 3 + 2]]
+
+                triangles += Triangle2d(Vector2(a), Vector2(b), Vector2(c))
+            }
+
+            return triangles
         }
-
-        return triangles
     }
 
     // this doesn't handle non-coplanar polygons
@@ -49,51 +74,68 @@ object Triangulator {
         val ac = points3d[2] - points3d[0]
 
         // normal of the plane
-        val plane = ab.cross(ac, Vector3()).normalize()
+        val normal = ab.cross(ac, Vector3()).normalize()
         val origin = points3d[0]
 
-        // 3d axis representing the 2d axis in the plane space
-        val orthoX = ab.normalize()
-        val orthoY = orthoX.cross(plane, Vector3())
+        try {
+            val rot = Quaternionf()
+            normal.rotationTo(Vector3(0f, 0f, 1f), rot)
 
-        val points2d = points3d.map { point3d ->
-            val relPoint = point3d - origin
+            val points2d = points3d.map { rot.transform(it, Vector3()) }
 
-            val x = orthoX.dot(relPoint)
-            val y = orthoY.dot(relPoint)
+            val points = points2d.map { PolygonPoint(it.x.toDouble(), it.y.toDouble(), it.z.toDouble()) }
+            val poly = PPolygon(points)
 
-            val point2d = Vector2(x, y)
+            Poly2Tri.triangulate(poly)
 
-            projectionMap += point2d to point3d
+            rot.invert()
 
-            point2d
+            return poly.triangles.map {
+                val p = it.points
+
+                Triangle3d(
+                        rot.transform(Vector3(p[0].xf, p[0].yf, p[0].zf), Vector3()).toCoords(),
+                        rot.transform(Vector3(p[2].xf, p[2].yf, p[2].zf), Vector3()).toCoords(),
+                        rot.transform(Vector3(p[1].xf, p[1].yf, p[1].zf), Vector3()).toCoords()
+                )
+            }
+
+
+        } catch (e: Throwable) {
+
+            // 3d axis representing the 2d axis in the plane space
+            val orthoX = ab.normalize()
+            val orthoY = orthoX.cross(normal, Vector3())
+
+            val points2d = points3d.map { point3d ->
+                val relPoint = point3d - origin
+
+                val x = orthoX.dot(relPoint)
+                val y = orthoY.dot(relPoint)
+
+                val point2d = Vector2(x, y)
+
+                projectionMap += point2d to point3d
+
+                point2d
+            }
+
+            // 2d triangulation
+            val data = points2d.flatMap { listOf(it.x, it.y) }.map { it.toDouble() }.toDoubleArray()
+            val indices = Earcut.earcut(data)
+            val triangle3d = mutableListOf<Triangle3d>()
+
+            repeat(indices.size / 3) { i ->
+                // using the 2d indices to build 3d triangles
+                triangle3d += Triangle3d(
+                        points3d[indices[i * 3]].toCoords(),
+                        points3d[indices[i * 3 + 1]].toCoords(),
+                        points3d[indices[i * 3 + 2]].toCoords()
+                )
+            }
+
+            return triangle3d
         }
-
-        // 2d triangulation
-        val data = points2d.flatMap { listOf(it.x, it.y) }.map { it.toDouble() }.toDoubleArray()
-        val indices = Earcut.earcut(data)
-        val triangle3d = mutableListOf<Triangle3d>()
-
-        repeat(indices.size / 3) { i ->
-            // using the 2d indices to build 3d triangles
-            triangle3d += Triangle3d(
-                    points3d[indices[i * 3]].toCoords(),
-                    points3d[indices[i * 3 + 1]].toCoords(),
-                    points3d[indices[i * 3 + 2]].toCoords()
-            )
-        }
-
-        return triangle3d
-    }
-
-    private fun isClockwise(vertices: List<Coords3d>): Boolean {
-        var sum = 0.0
-        repeat(vertices.size) { i ->
-            val v1 = vertices[i]
-            val v2 = vertices[(i + 1) % vertices.size]
-            sum += (v2.x - v1.x) * (v2.y + v1.y)
-        }
-        return sum > 0.0
     }
 
     @Suppress("UNCHECKED_CAST")
