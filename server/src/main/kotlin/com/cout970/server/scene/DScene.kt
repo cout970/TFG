@@ -137,8 +137,8 @@ data class SnapProjection(
 ) : DGroundProjection()
 
 data class BridgeGroundProjection(
-        val startElevation: Float,
-        val endElevation: Float
+        val start: Vector3,
+        val end: Vector3
 ) : DGroundProjection()
 
 // Shapes (Geometry processing)
