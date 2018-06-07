@@ -7,10 +7,7 @@ import com.cout970.server.util.colorFromHue
 import com.cout970.server.util.debug
 import com.cout970.server.util.toGeometry
 import eu.printingin3d.javascad.basic.Angle
-import eu.printingin3d.javascad.coords.Coords3d
-import eu.printingin3d.javascad.coords.Dims3d
 import eu.printingin3d.javascad.coords2d.Coords2d
-import eu.printingin3d.javascad.models.Cube
 import eu.printingin3d.javascad.models.LinearExtrude
 import eu.printingin3d.javascad.models2d.Polygon
 import org.joml.Vector2f
@@ -27,19 +24,9 @@ fun createDemoScene(): DScene {
     val origin = Vector2(535909f, 4746842f)
 
     val area = DArea(
-            Vector2f(origin.x - 1000, origin.y - 1000),
+            Vector2f(origin.x-1000, origin.y-1000),
             Vector2f(2000f)
     )
-
-    val lightModel = Cube.fromCoordinates(
-            Coords3d(0.4, 0.0, 0.4),
-            Coords3d(0.6, 4.0, 0.6)
-    ).addModel(Cube.fromCoordinates(
-            Coords3d(0.0, 4.0, 0.0),
-            Coords3d(1.0, 5.0, 1.0)
-    )).toGeometry()
-
-    val parkModel = Cube(Dims3d(1.0, 10.0, 1.0)).toGeometry()
 
     val schoolLabels = DLabelShapeSource(
             labelSource = DLabelSource(
@@ -77,7 +64,7 @@ fun createDemoScene(): DScene {
     )
 
     val parks = DShapeAtSurfaceSource(
-            geometrySource = DInlineSource(parkModel),
+            geometrySource = DFileSource("../data/tree.obj"),
             surfaceSource = DPolygonsSource(
                     "geom", "parques (polígono)", area
             ),
@@ -89,17 +76,17 @@ fun createDemoScene(): DScene {
                     emissiveColor = colorOf("000"),
                     opacity = 1f
             ),
-            projection = DefaultGroundProjection(5f, false)
+            projection = DefaultGroundProjection(0f, false)
     )
 
     val lights = DShapeAtPointSource(
             points = DPointSource("geom", "puntos de luz", area),
-            geometrySource = DInlineSource(lightModel),
+            geometrySource = DFileSource("../data/light.obj"),
             material = DMaterial(
                     metallic = 0.1f,
                     roughness = 0.3f,
-                    diffuseColor = colorOf("ff0"),
-                    emissiveColor = colorOf("1a1a1a"),
+                    diffuseColor = colorOf("22"),
+                    emissiveColor = colorOf("2a2a1a"),
                     opacity = 1f
             ),
             projection = DefaultGroundProjection(0f, false)
@@ -115,7 +102,7 @@ fun createDemoScene(): DScene {
             material = DMaterial(
                     metallic = 0.0f,
                     roughness = 0.8f,
-                    diffuseColor = colorFromHue(63.1f / 360f),
+                    diffuseColor = colorOf("333"),
                     emissiveColor = colorOf("000"),
                     opacity = 1f
             ),
@@ -133,7 +120,7 @@ fun createDemoScene(): DScene {
             material = DMaterial(
                     metallic = 0.0f,
                     roughness = 0.75f,
-                    diffuseColor = colorFromHue(273.1f / 360f),
+                    diffuseColor = colorOf("EEE"),
                     emissiveColor = colorOf("000"),
                     opacity = 1f
             ),
@@ -236,7 +223,7 @@ fun debugLayer(): DLayer {
 
     val cubeB = LinearExtrude(Polygon(listOf(
             Coords2d(1.0, 1.0), Coords2d(9.0, 1.0),
-            Coords2d(9.0, 9.0), Coords2d(1.0, 9.0)
+            Coords2d(9.0, 12.0), Coords2d(1.0, 12.0)
     )), 2.0, Angle.ZERO, 1.0)
 
     return DLayer(
@@ -269,7 +256,7 @@ fun debugLayer(): DLayer {
                                             opacity = 1f
                                     ),
                                     projection = DefaultGroundProjection(100f, true),
-                                    position = Vector2(0f, 50f)
+                                    position = Vector2(0f, -50f)
                             )),
                             DInlineShapeSource(ShapeLabel(
                                     txt = "Difference",
@@ -282,7 +269,7 @@ fun debugLayer(): DLayer {
                                             opacity = 1f
                                     ),
                                     projection = DefaultGroundProjection(100f, true),
-                                    position = Vector2(0f, 100f)
+                                    position = Vector2(0f, -100f)
                             )),
                             DInlineShapeSource(ShapeLabel(
                                     txt = "Intersection",
@@ -295,7 +282,7 @@ fun debugLayer(): DLayer {
                                             opacity = 1f
                                     ),
                                     projection = DefaultGroundProjection(100f, true),
-                                    position = Vector2(0f, 150f)
+                                    position = Vector2(0f, -150f)
                             ))
                     )
             ), DRule(

@@ -68,9 +68,9 @@ fun DArea.toSQL(): String {
 
 fun org.postgis.Polygon.toPolygon(): DPolygon {
     val points = getRing(0).points.map { Vector2(it.x.toFloat(), it.y.toFloat()) }
-    val holes = (2..numRings()).map { getRing(it - 1).points.map { Vector2(it.x.toFloat(), it.y.toFloat()) } }
+//    val holes = (1 until numRings()).map { getRing(it).points.reversed().map { Vector2(it.x.toFloat(), it.y.toFloat()) } }
 
-    return DPolygon(points, holes)
+    return DPolygon(points, emptyList())
 }
 
 fun DPolygon.relativize(): DPolygon {

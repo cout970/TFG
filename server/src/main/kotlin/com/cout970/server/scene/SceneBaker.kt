@@ -1,20 +1,27 @@
 package com.cout970.server.scene
 
 import com.cout970.server.ddbb.DDBBManager
+import com.cout970.server.geometry.ModelImporter
 import com.cout970.server.glTF.*
 import com.cout970.server.terrain.TerrainLoader
 import com.cout970.server.util.*
 import eu.printingin3d.javascad.basic.Angle
+import eu.printingin3d.javascad.basic.Radius
 import eu.printingin3d.javascad.coords.Coords3d
 import eu.printingin3d.javascad.coords.Triangle3d
 import eu.printingin3d.javascad.coords2d.Coords2d
+import eu.printingin3d.javascad.coords2d.LineSegment2d
+import eu.printingin3d.javascad.enums.PointRelation
 import eu.printingin3d.javascad.models.Cube
-import eu.printingin3d.javascad.models.LinearExtrude
 import eu.printingin3d.javascad.models.Polyhedron
+import eu.printingin3d.javascad.models2d.Abstract2dModel
+import eu.printingin3d.javascad.models2d.Area2d
 import eu.printingin3d.javascad.models2d.Polygon
+import eu.printingin3d.javascad.vrl.CSG
 import eu.printingin3d.javascad.vrl.FacetGenerationContext
 import org.joml.Matrix4f
 import org.joml.Vector4f
+import java.util.*
 import kotlin.math.sqrt
 import kotlin.streams.toList
 
@@ -300,7 +307,7 @@ object SceneBaker {
 
     private fun bakeShapeAtPoint(shape: ShapeAtPoint, view: TerrainLoader.TerrainView): Model {
         val translation = DTransformGeometry(
-                translation = Vector3(shape.point.x, 0f, shape.point.y),
+                translation = Vector3(shape.point.x, 0f, -shape.point.y),
                 source = shape.geometry
         )
         val newGeometry = translation.bake().project(shape.projection, view)
@@ -414,7 +421,7 @@ object SceneBaker {
         is DPolygonsSource -> getGeometry(source)
         is DExtrudedPolygonsSource -> getGeometry(source)
         is DInlineSource -> source.geometry
-        is DFileSource -> TODO()
+        is DFileSource -> ModelImporter.import(source.file)
     }
 
     private fun getGeometry(src: DPolygonsSource): DGeometry {
@@ -484,20 +491,26 @@ object SceneBaker {
 
     private fun extrude(polygon: DPolygon, height: Float): DGeometry {
         val coords = polygon.points.map { Coords2d(it.x.toDouble(), it.y.toDouble()) }
-//        val holes = polygon.holes.map { it.map { Coords2d(it.x.toDouble(), it.y.toDouble()) } }
+        val color = FacetGenerationContext.DEFAULT.color
 
-        val exterior = LinearExtrude(Polygon(coords), height.toDouble(), Angle.ZERO, 1.0)
-//        val interiors = holes.map { LinearExtrude(Polygon(it), height.toDouble(), Angle.ZERO, 1.0) }
+        val holes = polygon.holes
+                .map { Polygon3d.fromPolygons(it.map { Vector3(it.x, it.y, 0f).toCoords() }, color) }
+                .map { CSG(listOf(it)) }
 
-        val exteriorCsg = exterior.toCSG(FacetGenerationContext.DEFAULT)
+        var base = coords
+                .let { Polygon3d.fromPolygons(it.map { Coords3d(it.x, it.y, 0.0) }, color) }
+                .let { CSG(listOf(it)) }
 
-//        val finalCsg = interiors.fold(exteriorCsg) { acc, hole ->
-//            val toRemove = hole.toCSG(FacetGenerationContext.DEFAULT)
-//
-//            acc.difference(toRemove)
-//        }
+        holes.forEach {
+            base = base.difference(it)
+        }
 
-        val triangles3d = exteriorCsg.polygons.flatMap { Triangulator.triangulate(it) }
+        val polys = base.polygons.map {
+            val poly = Polygon(it.vertices.map { Coords2d(it.x, it.y) })
+            extrude(poly, height.toDouble(), Angle.ZERO, 1.0)
+        }
+
+        val triangles3d = polys.flatten().flatMap { Triangulator.triangulate(it) }
 
         // Correction, change y -> z and move up yOffset
         val yOffset = height / 2
@@ -664,16 +677,90 @@ object SceneBaker {
         val minI = (pos.x * cell).toInt()
         val maxI = ((pos.x + area.size.x) * cell).toInt()
 
-        val minJ = (pos.y * cell).toInt()
-        val maxJ = ((pos.y + area.size.x) * cell).toInt()
+        val minJ = ((pos.y) * cell).toInt()
+        val maxJ = ((pos.y + area.size.y) * cell).toInt()
 
         val triangles = areaOf(minI..maxI, minJ..maxJ).toList().flatMap { (x, y) ->
             listOf(
-                    Triangle3d(Coords3d((x + 1) * s, 0.0, (y + 1) * s), Coords3d((x + 1) * s, 0.0, y * s), Coords3d(x * s, 0.0, y * s)),
-                    Triangle3d(Coords3d(x * s, 0.0, (y + 1) * s), Coords3d((x + 1) * s, 0.0, (y + 1) * s), Coords3d(x * s, 0.0, y * s))
+                    Triangle3d(Coords3d((x + 1) * s, 0.0, (-y + 1) * s), Coords3d((x + 1) * s, 0.0, -y * s), Coords3d(x * s, 0.0, -y * s)),
+                    Triangle3d(Coords3d(x * s, 0.0, (-y + 1) * s), Coords3d((x + 1) * s, 0.0, (-y + 1) * s), Coords3d(x * s, 0.0, -y * s))
             )
         }
 
         return Polyhedron(triangles).toGeometry()
+    }
+
+    fun extrude(model: Abstract2dModel, height: Double, twist: Angle, scale: Double = 1.0): List<Polygon3d> {
+        val context = FacetGenerationContext.DEFAULT
+        val polygons = ArrayList<Polygon3d>()
+
+        for (area in model.getPointCircle(context)) {
+            val numOfSteps = if (twist.isZero) 1 else context.calculateNumberOfSlices(Radius.fromRadius(height))
+
+            var y1 = -height / 2
+            var alpha1 = Angle.ZERO
+            var c1 = area.rotate(alpha1).withZ(y1)
+
+            // generate bottom
+            for (lc in generateCover(area.rotate(alpha1).reverse())) {
+                polygons.add(Polygon3d.fromPolygons(lc.withZ(y1), context.color))
+            }
+
+            // generate walls
+            for (i in 1..numOfSteps) {
+                val y2 = i * height / numOfSteps - height / 2
+                val alpha2 = twist.mul(i.toDouble()).divide(numOfSteps.toDouble())
+
+                val c2 = area.rotate(alpha2).withZ(y2)
+
+                for (t in c1.indices) {
+                    val p = (t + 1) % c1.size
+
+                    polygons.add(Polygon3d.fromPolygons(listOf(c1[t], c2[p], c2[t]), context.color))
+                    polygons.add(Polygon3d.fromPolygons(listOf(c1[t], c1[p], c2[p]), context.color))
+                }
+
+                c1 = c2
+                y1 = y2
+                alpha1 = alpha2
+            }
+
+            // generate top
+            for (lc in generateCover(area.rotate(alpha1))) {
+                polygons.add(Polygon3d.fromPolygons(lc.withZ(y1), context.color))
+            }
+        }
+
+        return polygons
+    }
+
+    private fun generateCover(area: Area2d): List<Area2d> {
+        val result = ArrayList<Area2d>()
+        var coords = area
+
+        for (i in area.indices) {
+            if (coords.size <= 2) {
+                break
+            }
+            val p = coords.get(0)
+            var prev = p
+            var count = 0
+            for (c in coords) {
+                count++
+                if (c !== p && (!area.findCrossing(LineSegment2d(c, p), false).isEmpty()
+                                || area.calculatePointRelation(Coords2d.midPoint(c, p)) == PointRelation.OUTSIDE)) {
+                    break
+                }
+                prev = c
+            }
+
+            coords = if (count > 3) {
+                result.add(coords.subList(p, prev))
+                coords.subList(prev, p)
+            } else {
+                coords.subList(1, 0)
+            }
+        }
+        return result
     }
 }

@@ -22,7 +22,6 @@ object DDBBManager {
 
     fun init() {
         // Load the driver
-
         Driver.isRegistered()
         DriverWrapper.isRegistered()
         DriverManager.getConnection(Config.JDBC_URL, Config.DDBB_USER, Config.DDBB_PASSWORD()).close()
@@ -58,11 +57,13 @@ object DDBBManager {
     }
 
     fun loadPolygons(geomField: String, tableName: String, area: DArea): List<PolygonGroup> {
+        //ST_Segmentize(inter, 5)
         val sql = """
-                SELECT ST_Segmentize(inter, 5)
+                SELECT inter
                 FROM "$tableName", ${area.toSQL()} AS area, ST_Intersection($geomField, area) AS inter
                 WHERE ST_Isvalid($geomField) AND ST_Intersects($geomField, area);
                 """
+
 
         return DDBBManager.load(sql) {
 

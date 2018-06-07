@@ -4,6 +4,7 @@ import com.cout970.server.glTF.Vector2
 import com.cout970.server.glTF.Vector3
 import com.cout970.server.scene.DBufferGeometry
 import com.cout970.server.scene.GeometryBuilder
+import eu.printingin3d.javascad.coords.Coords3d
 import eu.printingin3d.javascad.coords.Triangle3d
 import eu.printingin3d.javascad.models.IModel
 import eu.printingin3d.javascad.vrl.FacetGenerationContext
@@ -64,3 +65,11 @@ fun DBufferGeometry.min(): Vector3 {
 }
 
 fun DBufferGeometry.center() = (max() - min()) * 0.5f + min()
+
+
+private val field = run {
+    Polygon::class.java.getDeclaredField("vertices").apply { isAccessible = true }
+}
+
+@Suppress("UNCHECKED_CAST")
+val Polygon.vertices: List<Coords3d> get() = field.get(this) as List<Coords3d>
