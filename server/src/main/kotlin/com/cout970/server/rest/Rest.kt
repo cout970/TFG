@@ -2,31 +2,22 @@ package com.cout970.server.rest
 
 import com.cout970.server.glTF.GLTF_GSON
 import com.cout970.server.scene.DScene
-import com.cout970.server.scene.SCENE_GSON
 import com.cout970.server.scene.SceneBaker
-import com.cout970.server.scene.scene
-import com.cout970.server.util.debug
+import com.cout970.server.serialization.SCENE_GSON
 import com.cout970.server.util.info
 import com.google.gson.GsonBuilder
 import com.google.gson.JsonParser
-import com.google.gson.stream.JsonWriter
-import spark.Request
 import spark.kotlin.ignite
 import java.io.File
-import java.io.OutputStreamWriter
-import java.nio.ByteBuffer
-import java.nio.ByteOrder
 import java.util.*
 
 
 object Rest {
 
-    private val gson = GsonBuilder()
+    private val CONFIG_GSON = GsonBuilder()
             .setPrettyPrinting()
             .enableComplexMapKeySerialization()
             .create()
-
-    val cacheMap = Collections.synchronizedMap(mutableMapOf<String, FloatArray>())
 
     private val sceneRegistry = mutableMapOf<String, String>()
 
@@ -69,35 +60,6 @@ object Rest {
                 val name = registerScene(scene)
                 response.header("location", name)
             }
-
-            // scenes
-            get("/api/scene/:id") {
-                val writer = JsonWriter(OutputStreamWriter(this.response.raw().outputStream, "UTF-8"))
-                debug("Loading scene")
-                gson.toJson(scene, DScene::class.java, writer)
-                writer.close()
-                ""
-            }
-
-            get("/api/binary/:id") {
-                val id = request.params("id")
-
-                debug("Loading binary blob: $id")
-
-                val array = cacheMap[id] ?: return@get ""
-
-                response.type("application/octet-stream")
-                val bytes = ByteArray(array.size * 4)
-
-                ByteBuffer
-                        .wrap(bytes)
-                        .order(ByteOrder.LITTLE_ENDIAN)
-                        .asFloatBuffer()
-                        .put(array)
-
-                this.response.raw().outputStream.write(bytes)
-                ""
-            }
         }
     }
 
@@ -109,13 +71,15 @@ object Rest {
 
         File("files/$name.gltf").writeText(GLTF_GSON.toJson(header))
         File("files/$name.bin").writeBytes(buffer)
+        File("files/$name.json").writeText(SCENE_GSON.toJson(scene))
 
         sceneRegistry[name] = "$name.gltf"
         saveScenes()
 
         info("Scene registered: " +
                 "header size = ${Math.ceil(File("files/$name.gltf").length() / 1000.0)}kB, " +
-                "binary size = ${Math.ceil(File("files/$name.bin").length() / 1000.0)}kB")
+                "binary size = ${Math.ceil(File("files/$name.bin").length() / 1000.0)}kB, " +
+                "definition size = ${Math.ceil(File("files/$name.json").length() / 1000.0)}kB")
 
         return name
     }
@@ -143,17 +107,7 @@ object Rest {
 
     private fun saveScenes() {
         val json = File("scenes.json")
-        json.writeText(gson.toJson(sceneRegistry))
+        json.writeText(CONFIG_GSON.toJson(sceneRegistry))
         info("Saved scene.json")
-    }
-
-    private fun parseVector2(request: Request): Pair<Int, Int> {
-        val xStr = request.params("x")
-        val yStr = request.params("y")
-
-        val x = xStr.toIntOrNull() ?: throw IllegalStateException("x must be an integer, but was: $xStr")
-        val y = yStr.toIntOrNull() ?: throw IllegalStateException("y must be an integer, but was: $yStr")
-
-        return x to y
     }
 }

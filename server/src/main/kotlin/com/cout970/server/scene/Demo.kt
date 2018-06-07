@@ -1,6 +1,5 @@
 package com.cout970.server.scene
 
-import com.cout970.server.glTF.GLTF_GSON
 import com.cout970.server.glTF.Vector2
 import com.cout970.server.glTF.Vector3
 import com.cout970.server.rest.Rest
@@ -15,9 +14,7 @@ import eu.printingin3d.javascad.models.Cube
 import eu.printingin3d.javascad.models.LinearExtrude
 import eu.printingin3d.javascad.models2d.Polygon
 import org.joml.Vector2f
-import java.io.File
 
-lateinit var scene: DScene
 
 fun bakeScene() {
     debug("Baking scene...")
@@ -55,8 +52,8 @@ fun createDemoScene(): DScene {
             material = DMaterial(
                     metallic = 0.5f,
                     roughness = 0.5f,
-                    diffuseColor = DColor(1f, 1f, 1f),
-                    emissiveColor = DColor(1f, 1f, 1f),
+                    diffuseColor = colorOf("FFF"),
+                    emissiveColor = colorOf("FFF"),
                     opacity = 1f
             ),
             projection = DefaultGroundProjection(50f, false)
@@ -73,7 +70,7 @@ fun createDemoScene(): DScene {
                     metallic = 0.0f,
                     roughness = 0.0f,
                     diffuseColor = colorFromHue(180f / 360f),
-                    emissiveColor = DColor(0f, 0f, 0f),
+                    emissiveColor = colorOf("000"),
                     opacity = 0.35f
             ),
             projection = DefaultGroundProjection(0f, false)
@@ -88,8 +85,8 @@ fun createDemoScene(): DScene {
             material = DMaterial(
                     metallic = 0.0f,
                     roughness = 0.5f,
-                    diffuseColor = DColor(0f, 0.5f, 0f),
-                    emissiveColor = DColor(0f, 0f, 0f),
+                    diffuseColor = colorOf("070"),
+                    emissiveColor = colorOf("000"),
                     opacity = 1f
             ),
             projection = DefaultGroundProjection(5f, false)
@@ -101,8 +98,8 @@ fun createDemoScene(): DScene {
             material = DMaterial(
                     metallic = 0.1f,
                     roughness = 0.3f,
-                    diffuseColor = DColor(1f, 1f, 0.0f),
-                    emissiveColor = DColor(0.1f, 0.1f, 0.1f),
+                    diffuseColor = colorOf("ff0"),
+                    emissiveColor = colorOf("1a1a1a"),
                     opacity = 1f
             ),
             projection = DefaultGroundProjection(0f, false)
@@ -119,7 +116,7 @@ fun createDemoScene(): DScene {
                     metallic = 0.0f,
                     roughness = 0.8f,
                     diffuseColor = colorFromHue(63.1f / 360f),
-                    emissiveColor = DColor(0f, 0f, 0f),
+                    emissiveColor = colorOf("000"),
                     opacity = 1f
             ),
             projection = SnapProjection(-4.0f)
@@ -137,7 +134,7 @@ fun createDemoScene(): DScene {
                     metallic = 0.0f,
                     roughness = 0.75f,
                     diffuseColor = colorFromHue(273.1f / 360f),
-                    emissiveColor = DColor(0f, 0f, 0f),
+                    emissiveColor = colorOf("000"),
                     opacity = 1f
             ),
             projection = DefaultGroundProjection(1f, false)
@@ -210,8 +207,8 @@ fun createDemoScene(): DScene {
             material = DMaterial(
                     metallic = 0.0f,
                     roughness = 0.5f,
-                    diffuseColor = DColor(0.0f, 1.0f, 0.0f),
-                    emissiveColor = DColor(0f, 0f, 0f),
+                    diffuseColor = colorOf("0F0"),
+                    emissiveColor = colorOf("000"),
                     opacity = 1.0f
             ),
             area = area,
@@ -227,7 +224,6 @@ fun createDemoScene(): DScene {
             origin = origin
     )
 
-    File("test.json").writeText(GLTF_GSON.toJson(scene))
     return scene
 }
 
@@ -255,8 +251,8 @@ fun debugLayer(): DLayer {
                                     material = DMaterial(
                                             metallic = 0.5f,
                                             roughness = 0.5f,
-                                            diffuseColor = DColor(1f, 1f, 1f),
-                                            emissiveColor = DColor(1f, 1f, 1f),
+                                            diffuseColor = colorOf("FFF"),
+                                            emissiveColor = colorOf("FFF"),
                                             opacity = 1f
                                     ),
                                     projection = DefaultGroundProjection(100f, true),
@@ -268,8 +264,8 @@ fun debugLayer(): DLayer {
                                     material = DMaterial(
                                             metallic = 0.5f,
                                             roughness = 0.5f,
-                                            diffuseColor = DColor(1f, 1f, 1f),
-                                            emissiveColor = DColor(1f, 1f, 1f),
+                                            diffuseColor = colorOf("FFF"),
+                                            emissiveColor = colorOf("FFF"),
                                             opacity = 1f
                                     ),
                                     projection = DefaultGroundProjection(100f, true),
@@ -281,8 +277,8 @@ fun debugLayer(): DLayer {
                                     material = DMaterial(
                                             metallic = 0.5f,
                                             roughness = 0.5f,
-                                            diffuseColor = DColor(1f, 1f, 1f),
-                                            emissiveColor = DColor(1f, 1f, 1f),
+                                            diffuseColor = colorOf("FFF"),
+                                            emissiveColor = colorOf("FFF"),
                                             opacity = 1f
                                     ),
                                     projection = DefaultGroundProjection(100f, true),
@@ -294,8 +290,8 @@ fun debugLayer(): DLayer {
                                     material = DMaterial(
                                             metallic = 0.5f,
                                             roughness = 0.5f,
-                                            diffuseColor = DColor(1f, 1f, 1f),
-                                            emissiveColor = DColor(1f, 1f, 1f),
+                                            diffuseColor = colorOf("FFF"),
+                                            emissiveColor = colorOf("FFF"),
                                             opacity = 1f
                                     ),
                                     projection = DefaultGroundProjection(100f, true),
@@ -312,8 +308,8 @@ fun debugLayer(): DLayer {
                                             material = DMaterial(
                                                     metallic = 0.5f,
                                                     roughness = 0.5f,
-                                                    diffuseColor = DColor(1f, 0.5f, 0.5f),
-                                                    emissiveColor = DColor(0f, 0f, 0f),
+                                                    diffuseColor = colorOf("F77"),
+                                                    emissiveColor = colorOf("000"),
                                                     opacity = 1f
                                             ),
                                             geometry = cubeA.toGeometry()
@@ -326,8 +322,8 @@ fun debugLayer(): DLayer {
                                             material = DMaterial(
                                                     metallic = 0.5f,
                                                     roughness = 0.5f,
-                                                    diffuseColor = DColor(1f, 0f, 0f),
-                                                    emissiveColor = DColor(0f, 0f, 0f),
+                                                    diffuseColor = colorOf("F00"),
+                                                    emissiveColor = colorOf("000"),
                                                     opacity = 1f
                                             ),
                                             geometry = cubeA.toCSG().union(cubeB.toCSG()).polygons.toGeometry()
@@ -340,8 +336,8 @@ fun debugLayer(): DLayer {
                                             material = DMaterial(
                                                     metallic = 0.5f,
                                                     roughness = 0.5f,
-                                                    diffuseColor = DColor(0f, 1f, 0f),
-                                                    emissiveColor = DColor(0f, 0f, 0f),
+                                                    diffuseColor = colorOf("0F0"),
+                                                    emissiveColor = colorOf("000"),
                                                     opacity = 1f
                                             ),
                                             geometry = cubeA.toCSG().difference(cubeB.toCSG()).polygons.toGeometry()
@@ -354,8 +350,8 @@ fun debugLayer(): DLayer {
                                             material = DMaterial(
                                                     metallic = 0.5f,
                                                     roughness = 0.5f,
-                                                    diffuseColor = DColor(1f, 0f, 0f),
-                                                    emissiveColor = DColor(0f, 0f, 0f),
+                                                    diffuseColor = colorOf("F00"),
+                                                    emissiveColor = colorOf("000"),
                                                     opacity = 1f
                                             ),
                                             geometry = cubeA.toCSG().intersect(cubeB.toCSG()).polygons.toGeometry()

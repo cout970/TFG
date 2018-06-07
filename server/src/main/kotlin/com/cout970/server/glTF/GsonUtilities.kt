@@ -1,10 +1,8 @@
 package com.cout970.server.glTF
 
-import com.cout970.server.scene.DColor
 import com.google.gson.*
 import com.google.gson.reflect.TypeToken
 import org.joml.Quaternionf
-import java.awt.Color
 import java.lang.reflect.Type
 import java.util.*
 
@@ -131,22 +129,6 @@ class UUIDSerializer : JsonSerializer<UUID>, JsonDeserializer<UUID> {
 
     override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): UUID {
         return UUID.fromString(json.asString)
-    }
-}
-
-class ColorSerializer : JsonSerializer<DColor>, JsonDeserializer<DColor> {
-
-    override fun serialize(src: DColor, typeOfSrc: Type, context: JsonSerializationContext): JsonElement {
-        val str = Integer.toHexString(Color(src.r, src.g, src.b, 1f).rgb).run {
-            substring(2, length)
-        }
-        return JsonPrimitive(str)
-    }
-
-    override fun deserialize(json: JsonElement, typeOfT: Type, context: JsonDeserializationContext): DColor {
-        val str = json.asString
-        val color = Color(str.toInt(16))
-        return DColor(color.red / 255f, color.green / 255f, color.blue / 255f)
     }
 }
 

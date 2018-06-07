@@ -1,7 +1,7 @@
 package com.cout970.server.scene
 
-import com.cout970.server.glTF.*
-import com.google.gson.GsonBuilder
+import com.cout970.server.glTF.Vector2
+import com.cout970.server.glTF.Vector3
 
 typealias Polygon3d = eu.printingin3d.javascad.vrl.Polygon
 
@@ -16,21 +16,12 @@ data class Model(
         val material: DMaterial
 )
 
-val SCENE_GSON = GsonBuilder()
-        .registerTypeAdapter(Vector4::class.java, Vector4Serializer())
-        .registerTypeAdapter(Vector3::class.java, Vector3Serializer())
-        .registerTypeAdapter(Vector2::class.java, Vector2Serializer())
-        .registerTypeAdapter(Quaternion::class.java, QuaternionSerializer())
-        .registerTypeAdapter(Matrix4::class.java, Matrix4Serializer())
-        .registerTypeAdapter(DColor::class.java, ColorSerializer())
-        .setPrettyPrinting()
-        .create()
 
-
-// TSDL
-// Terrain? Scene Definition Language
+// SDL
+// Scene Definition Language
 
 // Basic Components
+
 data class DRotation(
         val angle: Float,
         val axis: Vector3
@@ -68,7 +59,6 @@ data class DBufferGeometry(
         val attributes: List<BufferAttribute>
 ) : DGeometry()
 
-@Deprecated("old")
 data class BufferAttribute(
         val attributeName: String,
         val data: FloatArray,

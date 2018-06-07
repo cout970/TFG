@@ -27,10 +27,6 @@ fun BufferAttribute.merge(other: BufferAttribute): BufferAttribute {
     return BufferAttribute(attributeName, data + other.data, count)
 }
 
-fun DPolygon.flip(): DPolygon {
-    return DPolygon(points.reversed())
-}
-
 fun List<Coords3d>.center(): Coords3d {
     if (isEmpty()) return Coords3d.ZERO
 
@@ -70,17 +66,6 @@ fun DArea.toSQL(): String {
     return "ST_GeomFromText('POLYGON(($minX $minY,$minX $maxY,$maxX $maxY,$maxX $minY,$minX $minY))')"
 }
 
-fun getAreaString(pos: Pair<Int, Int>): String {
-    val ORIGIN = TerrainLoader.ORIGIN
-
-    val minX = ORIGIN.x + (-4) * 1000
-    val minY = ORIGIN.z + (-4) * 1000
-    val maxX = ORIGIN.x + (4) * 1000
-    val maxY = ORIGIN.z + (4) * 1000
-
-    return "ST_GeomFromText('POLYGON(($minX $minY,$minX $maxY,$maxX $maxY,$maxX $minY,$minX $minY))')"
-}
-
 fun org.postgis.Polygon.toPolygon(): DPolygon {
     val points = getRing(0).points.map { Vector2(it.x.toFloat(), it.y.toFloat()) }
     val holes = (2..numRings()).map { getRing(it - 1).points.map { Vector2(it.x.toFloat(), it.y.toFloat()) } }
@@ -89,12 +74,10 @@ fun org.postgis.Polygon.toPolygon(): DPolygon {
 }
 
 fun DPolygon.relativize(): DPolygon {
-    // .flip()
     return DPolygon(
             points.map { it.relativize() },
             holes.map { it.map { it.relativize() } }
     )
-//        return Polygon(points.map { Vector2(it.x, it.y) })
 }
 
 fun Vector2.relativize(): Vector2 {

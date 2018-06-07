@@ -2,7 +2,6 @@ package com.cout970.server.util
 
 import com.cout970.server.glTF.Vector2
 import com.cout970.server.glTF.Vector3
-import com.cout970.server.scene.DColor
 import eu.printingin3d.javascad.coords.Coords3d
 
 operator fun Vector3.plus(other: Vector3) = Vector3(this.x + other.x, this.y + other.y, this.z + other.z)
@@ -23,5 +22,3 @@ operator fun Vector2.times(other: Float) = Vector2(this.x * other, this.y * othe
 
 fun Vector3.toCoords(): Coords3d = Coords3d(x.toDouble(), y.toDouble(), z.toDouble())
 fun Coords3d.toVector(): Vector3 = Vector3(x.toFloat(), y.toFloat(), z.toFloat())
-
-fun DColor.toVector(): Vector3 = Vector3(r, g, b)
