@@ -3,7 +3,6 @@ package com.cout970.server.scene
 import com.cout970.server.glTF.Vector2
 import com.cout970.server.glTF.Vector3
 import com.cout970.server.rest.Rest
-import com.cout970.server.util.colorFromHue
 import com.cout970.server.util.debug
 import com.cout970.server.util.toGeometry
 import eu.printingin3d.javascad.basic.Angle
@@ -24,8 +23,8 @@ fun createDemoScene(): DScene {
     val origin = Vector2(535909f, 4746842f)
 
     val area = DArea(
-            Vector2f(origin.x-1000, origin.y-1000),
-            Vector2f(2000f)
+            Vector2f(origin.x-200, origin.y-200),
+            Vector2f(400f)
     )
 
     val schoolLabels = DLabelShapeSource(
@@ -52,15 +51,15 @@ fun createDemoScene(): DScene {
                     tableName = "centros de enseñanza (polígono)",
                     area = area
             ),
-            height = 25f,
+            height = 5f,
             material = DMaterial(
                     metallic = 0.0f,
                     roughness = 0.0f,
-                    diffuseColor = colorFromHue(180f / 360f),
-                    emissiveColor = colorOf("000"),
-                    opacity = 0.35f
+                    diffuseColor = colorOf("fefefe"),
+                    emissiveColor = colorOf("111"),
+                    opacity = 0.5f
             ),
-            projection = DefaultGroundProjection(0f, false)
+            projection = DefaultGroundProjection(0.5f, false)
     )
 
     val parks = DShapeAtSurfaceSource(
@@ -85,8 +84,21 @@ fun createDemoScene(): DScene {
             material = DMaterial(
                     metallic = 0.1f,
                     roughness = 0.3f,
-                    diffuseColor = colorOf("22"),
-                    emissiveColor = colorOf("2a2a1a"),
+                    diffuseColor = colorOf("fff"),
+                    emissiveColor = colorOf("000"),
+                    opacity = 1f
+            ),
+            projection = DefaultGroundProjection(0f, false)
+    )
+
+    val lightsLine = DShapeAtPointSource(
+            points = DPointSource("geom", "puntos de luz", area),
+            geometrySource = DFileSource("../data/light.obj"),
+            material = DMaterial(
+                    metallic = 0.1f,
+                    roughness = 0.3f,
+                    diffuseColor = colorOf("000"),
+                    emissiveColor = colorOf("000"),
                     opacity = 1f
             ),
             projection = DefaultGroundProjection(0f, false)
@@ -102,7 +114,7 @@ fun createDemoScene(): DScene {
             material = DMaterial(
                     metallic = 0.0f,
                     roughness = 0.8f,
-                    diffuseColor = colorOf("333"),
+                    diffuseColor = colorOf("f4c960"),
                     emissiveColor = colorOf("000"),
                     opacity = 1f
             ),
@@ -121,6 +133,23 @@ fun createDemoScene(): DScene {
                     metallic = 0.0f,
                     roughness = 0.75f,
                     diffuseColor = colorOf("EEE"),
+                    emissiveColor = colorOf("000"),
+                    opacity = 1f
+            ),
+            projection = DefaultGroundProjection(1f, false)
+    )
+    val buildings2 = DExtrudedShapeSource(
+            polygonsSource = DExtrudedPolygonsSource(
+                    geomField = "geom",
+                    heightField = "plantas",
+                    tableName = "edificación alturas",
+                    heightScale = 3.5f,
+                    area = area
+            ),
+            material = DMaterial(
+                    metallic = 0.0f,
+                    roughness = 0.75f,
+                    diffuseColor = colorOf("000"),
                     emissiveColor = colorOf("000"),
                     opacity = 1f
             ),
@@ -164,6 +193,14 @@ fun createDemoScene(): DScene {
                     shapes = listOf(lights)
             ))
     )
+    val lightsLayer2 = DLayer(
+            name = "Lights",
+            description = "Description",
+            rules = listOf(DRule(
+                    properties = emptyList(),
+                    shapes = listOf(lightsLine)
+            ))
+    )
 
     val streetLayer = DLayer(
             name = "Streets",
@@ -182,6 +219,14 @@ fun createDemoScene(): DScene {
                     shapes = listOf(buildings)
             ))
     )
+    val buildingLayer2 = DLayer(
+            name = "Buildings",
+            description = "Description",
+            rules = listOf(DRule(
+                    properties = emptyList(),
+                    shapes = listOf(buildings2)
+            ))
+    )
 
     val mainViewPoint = DViewPoint(
             location = Vector3(-6.6f, 213.1f, -31.6f),
@@ -194,7 +239,7 @@ fun createDemoScene(): DScene {
             material = DMaterial(
                     metallic = 0.0f,
                     roughness = 0.5f,
-                    diffuseColor = colorOf("0F0"),
+                    diffuseColor = colorOf("73c424"),
                     emissiveColor = colorOf("000"),
                     opacity = 1.0f
             ),
@@ -206,7 +251,7 @@ fun createDemoScene(): DScene {
             title = "Demo scene",
             abstract = "A demo scene showing the base components of a scene",
             viewPoints = listOf(mainViewPoint),
-            layers = listOf(buildingLayer, streetLayer, lightsLayer, parksLayer, schoolsLayer, schoolsLabelsLayer, debugLayer()),
+            layers = listOf(buildingLayer, streetLayer, lightsLayer2, lightsLayer, parksLayer, schoolsLayer, schoolsLabelsLayer, debugLayer()),
             ground = ground,
             origin = origin
     )

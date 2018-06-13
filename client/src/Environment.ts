@@ -40,13 +40,13 @@ export default class Environment {
 
         this.scene = new Scene()
         this.externalScene = new Scene()
-        this.scene.add(new AmbientLight('#CCCCCC', 0.25))
+        this.scene.add(new AmbientLight('#CCCCCC', 0.75))
 
         // let light = new PointLight(0xffffff, 0.25, 10000);
         // light.position.set(0, 1000, 0);
         // this.scene.add(light);
 
-        let directionalLight = new DirectionalLight(0xffffff, 0.5);
+        let directionalLight = new DirectionalLight(0xffffff, 0.15);
         directionalLight.position.set(0, 1000, 0);
         this.scene.add(directionalLight);
 
@@ -56,7 +56,7 @@ export default class Environment {
             antialias: true
         })
 
-        this.renderer.setClearColor(new Color("#00BFFF"), 1)
+        this.renderer.setClearColor(new Color("#f0f8ff"), 1)
 
         // Camera and render dimensions
         this.renderer.setSize(canvas.width, canvas.height)
